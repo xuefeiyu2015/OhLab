@@ -1,0 +1,1164 @@
+function LuminanceTuning_Stim(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+ECode;
+SegEvent=[TGTCD];%Event Flow of interest
+%SegEventEnd=[SHOWFIXCD,FIXOFF,TGTOFF,RWDOFFCD ,NaN,EXTRAFP];%Event end
+SegEventEnd=[TGTOFF];%Event end
+SegEventStr={'TargetOn'};
+AmpMatchFlag=0;%1:Amplitude match on ;0:Amplitude Match off
+
+
+PlotStartOffset=[300];%in ms
+PlotStopOffset=[1000];%in ms
+
+ExamplePlot=0;%PLots for presentations, turn off for regular use
+
+ResponseLatencyThreshold=3;
+
+%Parameter to define the sliding window to measure firing rates
+StepSize=5;%in ms
+BinWidth=5;%in ms
+
+
+%Criterias for selecting saccades
+V_Threshold=40;
+ContinueBin=5;
+ISI_Threshold=20;
+
+%Time bin pre saccade and time bin offset after saccade onset
+PlotSacPreBuffer=500;%in ms
+PlotSacPostBuffer=400;%in ms
+
+
+
+%Color Definition for each fractals
+%{
+Color=[lines(6);prism(6) ];
+Color(2,:)=copper(1)+0.5;
+Color=[Color;Color*0.5];
+%}
+%{
+Color={'#648FFF','#FE6100','#009E73','#88CCEE','#CC6677','#785EF0'};
+Color_RGB=[100,143,255;
+           254,97,0;
+           0,158,115;
+          136,204,238;
+          204,102,119;
+          120,94,240]/255;
+
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Unpack all the data base and task settings
+ECode;
+FileName=Data.FileName;
+TaskType=Data.TaskType;
+TaskCode=Data.TaskCode;
+TrialNum=EndTrial-StartTrial+1;
+Selection=StartTrial:EndTrial;
+
+
+%Abnormal check
+CheckCodePair=[TGTCD,TGTOFF];%This code should be the same as target on for good trials
+AbnormalTrials=AbnormalTrialCheck(Data,CheckCodePair);
+Selection=Selection(~ismember(Selection,AbnormalTrials));
+    
+
+
+
+
+%Target Information
+
+
+%% Target location
+
+TargetLoc=Data.TargetLoc(Selection,2:end);
+TargetPolar=Data.TargetPolarLoc(Selection,2:end);
+TargetAngle = TargetPolar(:,1);
+TargetEcc =  TargetPolar(:,2);
+
+UniqueAngle = unique(TargetAngle);
+UniqueEcc = unique(TargetEcc);
+minEcc = min(UniqueEcc);
+maxEcc = max(UniqueEcc);
+%Luminance
+
+%Sequence information from the library
+ParaLib=Data.ParaLib;
+if ismember('CurrentLuminance',keys(ParaLib))
+   LumFlag = ParaLib('CurrentLuminance');
+   LumFlag=LumFlag(Selection,2);
+
+   
+end
+%Group for the trail file
+%
+if ismember('Adams073124LUMSTIM_TASK1.rst',FileName)
+    LumFlag_Ori = LumFlag;
+    %
+    LumFlag(LumFlag_Ori<=20 & LumFlag_Ori>12) =20;
+    LumFlag(LumFlag_Ori<=12 & LumFlag_Ori>=8) =8;
+    LumFlag(LumFlag_Ori<=6 & LumFlag_Ori>=4) =3;
+    LumFlag(LumFlag_Ori<=3 & LumFlag_Ori>=1) =1;
+    %}
+    %{
+    LumFlag(LumFlag_Ori<=16 & LumFlag_Ori>8) =NaN;
+    LumFlag(LumFlag_Ori<8 & LumFlag_Ori>3) =NaN;
+    LumFlag(LumFlag_Ori<3 & LumFlag_Ori>1) =NaN;
+    %}
+
+end
+%}
+%{
+if ismember('stimOn',keys(ParaLib))
+   stimOnFlag = ParaLib('stimOn');
+   TrialStimOn = unique(stimOnFlag(stimOnFlag(:,2) == 1,1));
+   stimOn = [Selection',0*ones(length(Selection),1)];
+   stimOn(ismember(stimOn(:,1),TrialStimOn),2) = 1;
+  
+   stimOn= stimOn(:,2);
+%   stimOn=stimOn(Selection,:);
+   
+end
+%}
+if ismember('stimPower',keys(ParaLib))
+   stimPower_ori = ParaLib('stimPower');
+   stimPower_ori=stimPower_ori(:,2);
+   
+  
+   
+end
+
+if ismember('preStimDur,StimDur,PostStimDur',keys(ParaLib))
+   stimdur_info = ParaLib('preStimDur,StimDur,PostStimDur');
+   stimDur=stimdur_info(:,3);
+   
+   stimDur=stimDur(Selection,:);
+   
+end
+
+
+
+%%
+%GetEyeData
+EyeData=Data.EyeDataRaw;
+EyeChannel_X_L=EyeData(Selection,1);
+EyeChannel_Y_L=EyeData(Selection,2);
+%EyeChannel_X_R=EyeData(Selection,3);
+%EyeChannel_Y_R=EyeData(Selection,4);
+
+Eye_Eccentricity=cellfun(@(x,y) sqrt(x.^2+y.^2),EyeChannel_X_L,EyeChannel_Y_L,'uniform',0);
+
+EyeBinWidth=Data.EyeBinWidth;
+
+
+EventChannel=Data.EventChannel(Selection,:);
+EventTimeChannel=Data.EventTimeChannel(Selection,:);
+EventBin=Data.EventBin(Selection,:);
+
+%Load stimulation related data
+
+ParaLib=Data.ParaLib;
+if ismember('StimType',keys(ParaLib))
+    StimTime=ParaLib('StimType');
+    StimTime= StimTime(Selection,:);
+    StimTime= StimTime(:,2);
+    UnqiueStimTime = unique(StimTime);
+
+    %Seperate into stim trial and sham trial
+StimType=ReproduceFromEvent(EventChannel,[STIM1,SHAM0])';
+
+StimTrial = StimType == STIM1;
+ControlTrial = ~StimTrial;
+else
+    ControlTrial = [1:length(Selection)]';
+
+end
+
+
+
+
+%Load the spike channel
+SpikeChannelWhole=Data.SpikeChannel;
+SpikeTimeWhole=Data.SpikeTimeData(:,:,Selection);
+ChannelIDWhole=Data.ChannelID;
+ClusterIDWhole=Data.ClusterID;
+
+MultiChannel=0;
+if length(SpikeChannelWhole)>1
+    MultiChannel=1;
+    
+end
+for spk=1:length(SpikeChannelWhole)
+    SpikeChannel=SpikeChannelWhole(spk);
+    SpikeTime=squeeze(SpikeTimeWhole(spk,:,:))';
+    ChannelID=ChannelIDWhole(spk);
+    ClusterID=ClusterIDWhole(spk);
+
+%sSpikeTime=squeeze(Data.SpikeTimeData(:,:,Selection))';
+%SpikeBin=squeeze(Data.SpikeBinData(:,:,Selection))';
+
+
+%Select the period between fix off and target off set
+FIXOFFBin = FindOutTime(EventChannel,EventBin,FIXOFF )-500;
+SACENDBin = FIXOFFBin + 1500;
+%{
+FractalOffsetBin = FindOutTime(EventChannel,EventBin,TGTOFF);
+FractalOnsetTime = FindOutTime(EventChannel,EventTimeChannel,TGTCD );
+FractalOffsetTime = FindOutTime(EventChannel,EventTimeChannel,TGTOFF );
+%}
+EyeChannel_X_Selection= SelectEyeInterval(EyeChannel_X_L,FIXOFFBin,SACENDBin)';
+EyeChannel_Y_Selection= SelectEyeInterval(EyeChannel_Y_L,FIXOFFBin,SACENDBin)';
+
+EyeChannel_X_Selection=ReorganizeEye(EyeChannel_X_Selection);
+EyeChannel_Y_Selection=ReorganizeEye(EyeChannel_Y_Selection);
+
+
+%Analysis saccades for each trial
+Saccades=SelectSaccade(EyeChannel_X_Selection,EyeChannel_Y_Selection,EyeBinWidth,V_Threshold,ContinueBin,ISI_Threshold);
+SaccadeNumber=arrayfun(@(x)  x.NumOfSaccade,Saccades)';
+SaccadeAngle=arrayfun(@(x)  x.SaccadeAngle,Saccades,'UniformOutput' ,0)';
+SaccadeAmplitude=arrayfun(@(x)  x.SaccadeAmplitude,Saccades,'UniformOutput' ,0)';
+
+SaccadeStartTime=arrayfun(@(x)  x.SaccadeStartTime,Saccades,'UniformOutput' ,0)';
+SaccadeEndTime=arrayfun(@(x)  x.SaccadeEndTime,Saccades,'UniformOutput' ,0)';
+
+SaccadeStartPoint=arrayfun(@(x)  x.SaccadeStartPoint,Saccades,'UniformOutput' ,0)';
+SaccadeEndPoint=arrayfun(@(x)  x.SaccadeEndPoint,Saccades,'UniformOutput' ,0)';
+
+%Screen out the valid saccades and saccade start time above 5;
+
+AmplitudeThreshold=[max(minEcc/3,0),min(maxEcc+10,40)];
+
+TimeThreshold=0;
+
+
+SaccadeAngle_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) & x<AmplitudeThreshold(2))&(y>TimeThreshold))),SaccadeAmplitude,SaccadeStartTime,SaccadeAngle,'UniformOutput' ,0);
+
+SaccadeEndPoint_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) & x<AmplitudeThreshold(2))&(y>TimeThreshold)),:),SaccadeAmplitude,SaccadeStartTime,SaccadeEndPoint,'UniformOutput' ,0);
+SaccadeStartPoint_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) &  x<AmplitudeThreshold(2) )&(y>TimeThreshold)),:),SaccadeAmplitude,SaccadeStartTime,SaccadeStartPoint,'UniformOutput' ,0);
+
+SaccadeStartTime_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) & x<AmplitudeThreshold(2))&(y>TimeThreshold)),:),SaccadeAmplitude,SaccadeStartTime,SaccadeStartTime,'UniformOutput' ,0);
+SaccadeEndTime_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) & x<AmplitudeThreshold(2))&(y>TimeThreshold)),:),SaccadeAmplitude,SaccadeStartTime,SaccadeEndTime,'UniformOutput' ,0);
+
+
+SaccadeAmplitude_Selection=cellfun(@(x,y,z) z(((x>AmplitudeThreshold(1) & x<AmplitudeThreshold(2))&(y>TimeThreshold)),:),SaccadeAmplitude,SaccadeStartTime,SaccadeAmplitude,'UniformOutput' ,0);
+%Only look at the first saccade
+SaccadeNumInEachTrial=cellfun(@numel,SaccadeAngle_Selection);
+
+
+SaccadeAngle_First=NaN*ones(1,length(SaccadeNumInEachTrial));
+SaccadeEndPoint_First=NaN*ones(length(SaccadeNumInEachTrial),2);
+RT_First_Target=NaN*ones(1,length(SaccadeNumInEachTrial));
+SacEnd_First_Target=NaN*ones(1,length(SaccadeNumInEachTrial));
+
+SaccadeStartPoint_First=NaN*ones(length(SaccadeNumInEachTrial),2);
+
+SaccadeAmplitude_First=NaN*ones(1,length(SaccadeNumInEachTrial));
+
+SaccadeAngle_First(SaccadeNumInEachTrial>0)=cell2mat(cellfun(@(x) x(1,:),SaccadeAngle_Selection(SaccadeNumInEachTrial>0),'UniformOutput' ,0));
+SaccadeEndPoint_First(SaccadeNumInEachTrial>0,:)=cell2mat(cellfun(@(x) x(1,:),SaccadeEndPoint_Selection(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+RT_First_Target(SaccadeNumInEachTrial>0)=cell2mat(cellfun(@(x) x(1,:),SaccadeStartTime_Selection(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+SacEnd_First_Target(SaccadeNumInEachTrial>0)=cell2mat(cellfun(@(x) x(1,:),SaccadeEndTime_Selection(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+
+
+SaccadeStartPoint_First(SaccadeNumInEachTrial>0,:)=cell2mat(cellfun(@(x) x(1,:),SaccadeStartPoint_Selection(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+
+SaccadeAmplitude_First(SaccadeNumInEachTrial>0)=cell2mat(cellfun(@(x) x(1,:),SaccadeAmplitude_Selection(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+
+
+RT_TargetToFixOff = RT_First_Target - 500;
+
+%Align neural responses according to the saccade onset time
+%
+
+%Organize the spike time using the same way
+%Align spike time with target onset
+
+AlignedSpike=SpikeAlignTool(FIXOFFBin,SpikeTime,StepSize,BinWidth);
+
+SpikeTimeAligned_FixOff=AlignedSpike.SpikeTime_Aligned_Whole;
+
+
+
+
+%Align again on saccade onset
+AlignedSpike=SpikeAlignTool(RT_First_Target',SpikeTimeAligned_FixOff,StepSize,BinWidth);
+
+Raster_SacOn_whole = AlignedSpike.SpikeTime_Aligned_Whole;
+
+
+PSTH_SacOn=AlignedSpike.PSTH_Aligned;
+TimeSequence_SacOn=AlignedSpike.PSTH_Time_Aligned;
+%Select interval
+SelectPSTHinterval_SacOn=[-PlotSacPreBuffer,PlotSacPostBuffer];
+[PSTH_SacOn,TimeSequence_SacOn]=SelectPSTHInterval(PSTH_SacOn,TimeSequence_SacOn,SelectPSTHinterval_SacOn);
+
+
+
+TimeSequence_SacOn_mean=nanmean(TimeSequence_SacOn,1);
+
+
+%Change raster
+Raster_SacOn= SelectSpikeTimeInterval(Raster_SacOn_whole,SelectPSTHinterval_SacOn(1)*ones(size(Raster_SacOn_whole,1),1),SelectPSTHinterval_SacOn(end)*ones(size(Raster_SacOn_whole,1),1));
+
+
+
+%Align Eye trace with saccade onset
+%Select the eye eccentricity between target onset and target offset
+Eye_Eccentricity_FixOff=SelectEyeInterval(Eye_Eccentricity,FIXOFFBin,SACENDBin)';
+Eye_Eccentricity_FixOff=ReorganizeEye(Eye_Eccentricity_FixOff);
+
+
+
+%Select the interval around saccade onset
+EyeTime=0:EyeBinWidth:size(Eye_Eccentricity_FixOff,2)-1;
+
+EyeEcc_Aligned=AlignEyeData(Eye_Eccentricity_FixOff,EyeTime,RT_First_Target,[-PlotSacPreBuffer,PlotSacPostBuffer]);
+
+EyeVel_Aligned= abs(diff(EyeEcc_Aligned,1,2));
+EyeVel_Aligned=[EyeVel_Aligned,EyeVel_Aligned(:,end)]/EyeBinWidth*1000;
+
+
+EyeEcc_Aligned_mean=nanmean(EyeEcc_Aligned,1);
+EyeEcc_Aligned_sem=nanstd(EyeEcc_Aligned,[],1)./sqrt(sum(~isnan(EyeEcc_Aligned),1));
+
+%% Align with saccade offset
+AlignedSpike=SpikeAlignTool(SacEnd_First_Target',SpikeTimeAligned_FixOff,StepSize,BinWidth);
+
+PSTH_SacOff=AlignedSpike.PSTH_Aligned;
+TimeSequence_SacOff=AlignedSpike.PSTH_Time_Aligned;
+%Select interval
+SelectPSTHinterval_SacOff=[-PlotSacPreBuffer,PlotSacPostBuffer];
+[PSTH_SacOff,TimeSequence_SacOff]=SelectPSTHInterval(PSTH_SacOff,TimeSequence_SacOff,SelectPSTHinterval_SacOff);
+
+
+
+TimeSequence_SacOff_mean=nanmean(TimeSequence_SacOff,1);
+
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%Align data on object onset
+%Segregate spike data from fractal onset to fractal offset
+
+SegmentData=EventSegTool(SegEvent,SegEventEnd,PlotStartOffset,PlotStopOffset,EventChannel,EventTimeChannel,SpikeTime,StepSize,BinWidth);
+
+FR_Each = SegmentData.MeanFRRaw{1};
+FR_Mean = mean(FR_Each);
+FR_Std = std(FR_Each);
+
+%Retrive data from the field
+
+%Relative time bin for each event
+RelativeTimeMarker=SegmentData.RelativeTimeMarker{1};%=EventTimeMarker;
+%Absolute time marker for each event
+AbosoluteTimeMarker=SegmentData.AbsoluteTimeMarker{1};
+
+ObjOnTimeMarker=nanmean(RelativeTimeMarker);
+
+RwdTimeAbs=FindOutTime(EventChannel,EventBin,RWDCD);
+RwdTimeRel=RwdTimeAbs-AbosoluteTimeMarker(:,1);
+
+%Algin marker to sac-on & sac-off
+RwdTimeRelSacEnd=RwdTimeRel-SacEnd_First_Target';
+TgtOffTimeRelSacEnd=RelativeTimeMarker(:,2)-SacEnd_First_Target';
+
+RwdTimeRelSacEndMean=nanmean(RwdTimeRelSacEnd);
+TgtOffTimeRelSacEndMean=nanmean(TgtOffTimeRelSacEnd);
+
+%PSTH for each event
+MeanPSTH=SegmentData.MeanPSTH;%=[PSTH_Event_Time',PSTH_Event'];
+MeanPSTH_Time=MeanPSTH{1};
+MeanPSTH_FR_FractalOn=MeanPSTH{2};
+
+PSTH_Time_FraOn_All=nanmean(MeanPSTH_Time,1);
+
+SpikeCount = SegmentData.PSTH_Event_SpikeCount{1}/BinWidth*1000;
+
+%MeanPSTH_FR_FractalOn = SpikeCount;
+%MeanPSTH_FR_FractalOn=SpikeCount;
+%% Raster after align
+RasterTgtOn = SegmentData.RasterAfterAlign{1};
+
+
+
+%Get mean and sem of eye eccentricity
+%Get eye trance distance during the interval
+StartTimeBin=FindOutTime(EventChannel,EventTimeChannel,SegEvent)-PlotStartOffset;
+StartTimeBin(StartTimeBin<1)=1;
+EndTimeBin=FindOutTime(EventChannel,EventTimeChannel,SegEventEnd )+PlotStopOffset;
+  
+Eye_Eccentricity_FractalOn=SelectEyeInterval(Eye_Eccentricity,StartTimeBin,EndTimeBin)';
+Eye_Eccentricity_FractalOn=ReorganizeEye(Eye_Eccentricity_FractalOn);
+
+
+
+
+%% Aligh respect to stim onset
+
+StimOnsetTime = FindOutTime(EventChannel,EventBin,ON_STIM);
+StimOffsetTime = FindOutTime(EventChannel,EventBin,OFF_STIM);
+TgtOnsetTime = FindOutTime(EventChannel,EventBin,TGTCD);
+StimDur= StimOffsetTime-StimOnsetTime;
+
+StimOnsetTime_Rel =StimOnsetTime-TgtOnsetTime;
+StimOffsetTime_Rel =StimOffsetTime-TgtOnsetTime;
+
+StimOnsetTime_Rel_Stim=mean(StimOnsetTime_Rel(StimTrial));
+StimOffsetTime_Rel_Stim=mean(StimOffsetTime_Rel(StimTrial));
+
+
+BaseLineWindow = [-300, -100];
+VisualEpoch = [mean(StimOnsetTime_Rel),mean(StimOnsetTime_Rel)+200];
+MovementEpoch = [-200,0];
+
+
+FR_BaseLine = mean(MeanPSTH_FR_FractalOn(:,PSTH_Time_FraOn_All<=BaseLineWindow(2) & PSTH_Time_FraOn_All>=BaseLineWindow(1)),2);
+FR_VisualEpoch = mean(MeanPSTH_FR_FractalOn(:,PSTH_Time_FraOn_All<=VisualEpoch(2) & PSTH_Time_FraOn_All>=VisualEpoch(1)),2);
+FR_MovementEpoch = mean(PSTH_SacOn(:,TimeSequence_SacOn_mean<=MovementEpoch(2) & TimeSequence_SacOn_mean>=MovementEpoch(1)),2);
+
+%{
+%% Align data on optical stim onset
+SegEvent = [ON_STIM];
+SegEventEnd = [OFF_STIM];
+SegEventStr={'StimOn'};
+
+PlotStartOffset=[100];%in ms
+PlotStopOffset=[100];%in ms
+
+SegmentData=EventSegTool(SegEvent,SegEventEnd,PlotStartOffset,PlotStopOffset,EventChannel,EventTimeChannel,SpikeTime,StepSize,BinWidth);
+
+%Retrive data from the field
+%Total average for each event
+MeanFR=SegmentData.MeanFR; %[Mean,sem]%Averall mean and sem
+MeanFRRaw=SegmentData.MeanFRRaw{1};%=AverageFiringRate_Event;
+
+%Relative time bin for each event
+RelativeTimeMarker=SegmentData.RelativeTimeMarker{1};%=EventTimeMarker;
+%Absolute time marker for each event
+AbosoluteTimeMarker=SegmentData.AbsoluteTimeMarker{1};
+
+
+TimeMarker=SegmentData.RelativeTimeMarker{1}; %[Mean,sem]%Averall mean and sem
+
+Interval = nanmean(TimeMarker);
+
+%For Raster
+Raster=SegmentData.RasterAfterAlign{1};
+
+SpikeCount = SegmentData.PSTH_Event_SpikeCount{1}/BinWidth*1000;
+
+
+
+%PSTH for each event
+MeanPSTH=SegmentData.MeanPSTH;%=[PSTH_Event_Time',PSTH_Event'];
+MeanPSTH_Time=MeanPSTH{1};
+MeanPSTH_FR=MeanPSTH{2};
+
+MeanPSTH_Time_Mean = nanmean(MeanPSTH_Time);
+
+%{
+%Seperate into stim trial and sham trial
+StimType=ReproduceFromEvent(EventChannel,[STIM1,SHAM0])';
+
+StimTrial = StimType == STIM1;
+ControlTrial = ~StimTrial;
+%}
+
+PSTH_Stim = MeanPSTH_FR(StimTrial,:);
+PSTH_Control = MeanPSTH_FR(ControlTrial,:);
+%
+%}
+%{
+PSTH_Stim = MeanPSTH_FR_FractalOn(StimTrial,:);
+PSTH_Control = MeanPSTH_FR_FractalOn(ControlTrial,:);
+figure
+plot(mean(PSTH_Stim,1),'-r')
+hold on 
+plot(mean(PSTH_Control,1),'-b')
+%}
+%xlim([0,100]);
+%% Loop over the luminance
+
+UniqueLum = unique(LumFlag);
+UniqueLum = UniqueLum(~isnan(UniqueLum));
+max_val =  0*ones(1,length(UniqueAngle));
+max_val_control = 0*ones(1,length(UniqueAngle));
+
+for i = 1:length(UniqueLum)
+
+    sel_Lum = LumFlag == UniqueLum(i);
+
+    for j = 1:length(UniqueAngle)
+
+        sel_Angle =  TargetAngle == UniqueAngle(j);
+
+        sel = sel_Lum & sel_Angle;
+
+        sel_Stim = (StimTrial  == 1) & sel;
+
+        sel_Control = (StimTrial == 0) & sel;
+
+        CountEach(i,j) = sum(sel_Stim);
+        CountEach_C(i,j) = sum(sel_Control);
+
+         %Align on target on 
+        currPSTH_FR_TgtOn_Stim = MeanPSTH_FR_FractalOn(sel_Stim,:);
+        TgtOn_LumLoc_Mean_Stim{i,j} = nanmean(currPSTH_FR_TgtOn_Stim,1);
+        TgtOn_LumLoc_Sem_Stim{i,j} = nanstd(currPSTH_FR_TgtOn_Stim,[],1)./sqrt(sum(~isnan(currPSTH_FR_TgtOn_Stim),1));
+
+        
+        TgtOn_LumLoc_Ave_Stim(i,j)=mean(FR_VisualEpoch(sel_Stim));
+        TgtOn_LumLoc_Ave_Control(i,j)=mean(FR_VisualEpoch(sel_Control));
+
+        TgtOn_LumLoc_AveSem_Stim(i,j)=std(FR_VisualEpoch(sel_Stim))/sqrt(sum(sel_Stim));
+        TgtOn_LumLoc_AveSem_Control(i,j)=std(FR_VisualEpoch(sel_Control))/sqrt(sum(sel_Control));
+
+
+        currPSTH_FR_TgtOn_Control = MeanPSTH_FR_FractalOn(sel_Control,:);
+        TgtOn_LumLoc_Mean_Control{i,j} = nanmean(currPSTH_FR_TgtOn_Control,1);
+        TgtOn_LumLoc_Sem_Control{i,j} = nanstd(currPSTH_FR_TgtOn_Control,[],1)./sqrt(sum(~isnan(currPSTH_FR_TgtOn_Control),1));
+
+        max_val_curr = max(TgtOn_LumLoc_Mean_Stim{i,j}(PSTH_Time_FraOn_All<=VisualEpoch(2) & PSTH_Time_FraOn_All>=VisualEpoch(1))+TgtOn_LumLoc_Sem_Stim{i,j}(PSTH_Time_FraOn_All<=VisualEpoch(2) & PSTH_Time_FraOn_All>=VisualEpoch(1)));
+        if max_val_curr > max_val(j)
+            max_val(j)=max_val_curr;
+        end
+        max_val_control_curr = max(TgtOn_LumLoc_Mean_Control{i,j}+TgtOn_LumLoc_Sem_Control{i,j});
+        if max_val_control_curr  > max_val_control(j) 
+            max_val_control(j)=max_val_control_curr;
+        end
+
+
+         %Align on sac on 
+         
+         curr_SacOn_Stim = PSTH_SacOn(sel_Stim,:);
+         SacOn_LumLoc_Mean_Stim{i,j} = nanmean(curr_SacOn_Stim,1);
+         SacOn_LumLoc_Sem_Stim{i,j} = nanstd(curr_SacOn_Stim ,[],1)./sqrt(sum(~isnan(curr_SacOn_Stim ),1));
+
+
+         curr_SacOn_Control = PSTH_SacOn(sel_Control,:);
+         SacOn_LumLoc_Mean_Control{i,j} = nanmean(curr_SacOn_Control,1);
+         SacOn_LumLoc_Sem_Control{i,j} = nanstd(curr_SacOn_Control ,[],1)./sqrt(sum(~isnan(curr_SacOn_Control ),1));
+
+         SacOn_LumLoc_Ave_Stim(i,j)=mean(FR_MovementEpoch(sel_Stim));
+        SacOn_LumLoc_Ave_Control(i,j)=mean(FR_MovementEpoch(sel_Control));
+
+
+         SacOn_LumLoc_AveSem_Stim(i,j)=std(FR_MovementEpoch(sel_Stim))/sqrt(sum(sel_Stim));
+        SacOn_LumLoc_AveSem_Control(i,j)=std(FR_MovementEpoch(sel_Control))/sqrt(sum(sel_Control));
+
+        %Behavior
+        RT_LocLum_Control=RT_TargetToFixOff(sel_Control);
+        RT_LocLum_Stim=RT_TargetToFixOff(sel_Stim);
+
+        RT_LocLum_Control_Mean(i,j) = nanmean(RT_LocLum_Control);
+        RT_LocLum_Control_Sem(i,j) = nanstd(RT_LocLum_Control)/sqrt(sum(sel_Control));
+
+
+        RT_LocLum_Stim_Mean(i,j) = nanmean(RT_LocLum_Stim);
+        RT_LocLum_Stim_Sem(i,j) = nanstd(RT_LocLum_Stim)/sqrt(sum(sel_Stim));
+
+
+
+
+    end
+
+
+
+end
+
+%RF
+
+Ave_Tgt = mean(TgtOn_LumLoc_Ave_Stim,1);
+
+RF_Loc = find(Ave_Tgt==max(Ave_Tgt));
+NonRF_Loc = find(Ave_Tgt~=max(Ave_Tgt));
+
+Angle_RF = UniqueAngle(RF_Loc);
+ max_val_RF = max_val(RF_Loc);
+ if(length(max_val_RF)>1)
+     max_val_RF=max_val_RF(1);
+     RF_Loc=1;
+    
+     NonRF_Loc =2;
+    
+ end
+
+disp(sprintf('RF is %1.1f',Angle_RF));
+
+TgtOn_LumRF_Mean_Stim = TgtOn_LumLoc_Mean_Stim(:,RF_Loc);
+TgtOn_LumRF_Mean_Control = TgtOn_LumLoc_Mean_Control(:,RF_Loc);
+
+TgtOn_LumRF_Sem_Stim = TgtOn_LumLoc_Sem_Stim(:,RF_Loc);
+TgtOn_LumRF_Sem_Control = TgtOn_LumLoc_Sem_Control(:,RF_Loc);
+
+%Plot range 
+PlotTgtOn = [-50,300];
+PlotSacOn = [-300,150];
+
+sel_tgt = PSTH_Time_FraOn_All <=PlotTgtOn(2) & PSTH_Time_FraOn_All >=PlotTgtOn(1);
+sel_sac = TimeSequence_SacOn_mean <=PlotSacOn(2) & TimeSequence_SacOn_mean >=PlotSacOn(1);
+
+Plot_Stim = [50,100];
+
+%On Average optical stimulation effect
+
+for j = 1:length(UniqueAngle)
+    sel =  TargetAngle == UniqueAngle(j);
+    sel_Stim = (StimTrial  == 1) & sel;
+    sel_Control = (StimTrial  == 0) & sel;
+
+    currPSTH_FR_TgtOn_Stim = MeanPSTH_FR_FractalOn(sel_Stim,sel_tgt);
+    currPSTH_FR_TgtOn_Control = MeanPSTH_FR_FractalOn(sel_Control,sel_tgt);
+
+    PSTH_Stim_Mean(j,:) = nanmean(currPSTH_FR_TgtOn_Stim,1);
+    PSTH_Control_Mean(j,:) = nanmean(currPSTH_FR_TgtOn_Control,1);
+
+    PSTH_Stim_Sem(j,:) = nanstd(currPSTH_FR_TgtOn_Stim,[],1)/sqrt(sum(sel_Stim ));
+    PSTH_Control_Sem(j,:) = nanstd(currPSTH_FR_TgtOn_Control,[],1)/sqrt(sum(sel_Control ));
+
+
+
+
+end
+
+PSTH_Stim_Mean_RF = PSTH_Stim_Mean(RF_Loc,:);
+PSTH_Control_Mean_RF = PSTH_Control_Mean(RF_Loc,:);
+
+PSTH_Stim_Sem_RF = PSTH_Stim_Sem(RF_Loc,:);
+PSTH_Control_Sem_RF = PSTH_Control_Sem(RF_Loc,:);
+
+PSTH_Stim_Mean_NonRF = PSTH_Stim_Mean(NonRF_Loc,:);
+PSTH_Control_Mean_NonRF = PSTH_Control_Mean(NonRF_Loc,:);
+
+PSTH_Stim_Sem_NonRF = PSTH_Stim_Sem(NonRF_Loc,:);
+PSTH_Control_Sem_NonRF = PSTH_Control_Sem(NonRF_Loc,:);
+
+
+%{
+figure
+plot(PSTH_Stim_Mean','-r')
+hold on
+plot(PSTH_Control_Mean','--k')
+%}
+
+
+Color=[lines(6);prism(6) ];
+Color(2,:)=[1,0.1,0.1];
+Color=[Color;Color*0.5];
+
+%%
+if ShowFigureFlag
+
+    color_seq = {'-b','-g','y'};
+    color_seq2 = {'r','g','y'};
+
+ %%%%Figure 1 Overall PSTH and 4 tunings 
+ 
+FigIndex = 110;
+FigNum = 1;
+    
+figtitlestr{FigNum}=sprintf('LuminanceTunings_withoutStim');
+fig{FigNum}=PrepareFigure(FigIndex,'w',[30,100, 1200,800],'Name',figtitlestr{FigNum});
+
+
+
+ for j = 1:length(UniqueAngle)
+     subplot(2,4,(j-1)*2+1);
+     for i = 1:length(UniqueLum)
+        shadedErrorBar(PSTH_Time_FraOn_All,TgtOn_LumLoc_Mean_Control{i,j},TgtOn_LumLoc_Sem_Control{i,j},'lineprops',{Color(i,:)},'transparent',1,'patchSaturation',0.3);
+        hold on
+     end
+     title(sprintf('Angle: %1.1d',UniqueAngle(j)));
+xlim(PlotTgtOn );
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend(string(UniqueLum));
+xlabel('Time from tgt onset(ms)');
+ylabel('Firing Rate(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+
+ subplot(2,4,(j-1)*2+2);
+     for i = 1:length(UniqueLum)
+        shadedErrorBar(TimeSequence_SacOn_mean,SacOn_LumLoc_Mean_Control{i,j},SacOn_LumLoc_Sem_Control{i,j},'lineprops',{Color(i,:)},'transparent',1,'patchSaturation',0.3);
+        hold on
+     end
+     title(sprintf('Angle: %1.1d',UniqueAngle(j)));
+xlim(PlotSacOn);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+
+xlabel('Time from saccade onset(ms)');
+ylabel('Firing Rate(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+
+
+subplot(2,4,(j-1)*2+5);
+plot(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),'-ok','LineWidth',3);
+hold on;
+errorbar(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),TgtOn_LumLoc_AveSem_Control(:,j),'sk','LineWidth',3);
+xlabel('Relative Luminance Level');
+ylabel('Ave Firing Rate during TgtOn(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+box off
+
+subplot(2,4,(j-1)*2+6);
+plot(UniqueLum,SacOn_LumLoc_Ave_Control(:,j),'-ok','LineWidth',3);
+hold on;
+errorbar(UniqueLum,SacOn_LumLoc_Ave_Control(:,j),SacOn_LumLoc_AveSem_Control(:,j),'sk','LineWidth',3);
+xlabel('Relative Luminance Level');
+ylabel('Ave Firing Rate during SacOn(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+box off
+
+ end
+ 
+ %Add title
+
+title_msg=sprintf(' %s, SpikeChannel: %d, TrialNum: %d ',FileName,SpikeChannel,TrialNum);
+a=annotation('textbox',[0.25,0.7,0.3,0.3],'String',title_msg,'FitBoxToText','on');
+a.FontSize=20;
+a.FontWeight='Bold';
+a.LineStyle='none';
+
+%% Luminance Tuning during optical stimulation
+FigIndex = FigIndex +1;
+FigNum = FigNum+1;
+
+figtitlestr{FigNum}=sprintf('LuminanceTunings_DuringOpticalStimulation');
+fig{FigNum}=PrepareFigure(FigIndex,'w',[30,100, 1200,800],'Name',figtitlestr{FigNum});
+
+
+
+ for j = 1:length(UniqueAngle)
+     subplot(2,2,j);
+      %  StimOnsetTime_Rel_Stim
+        area([StimOnsetTime_Rel_Stim,StimOffsetTime_Rel_Stim],[max_val(j),max_val(j)],'FaceColor','k','FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+       hold on
+
+
+     for i = 1:length(UniqueLum)
+        shadedErrorBar(PSTH_Time_FraOn_All,TgtOn_LumLoc_Mean_Stim{i,j},TgtOn_LumLoc_Sem_Stim{i,j},'lineprops',{Color(i,:)},'transparent',1,'patchSaturation',0.3);
+        hold on
+     end
+     title(sprintf('Angle: %1.1d',UniqueAngle(j)));
+xlim(PlotTgtOn );
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend(string(UniqueLum));
+xlabel('Time from tgt onset(ms)');
+ylabel('Firing Rate(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+box off
+
+
+
+subplot(2,2,j+2);
+
+plot(UniqueLum,TgtOn_LumLoc_Ave_Stim(:,j),'-or','LineWidth',3);
+hold on;
+errorbar(UniqueLum,TgtOn_LumLoc_Ave_Stim(:,j),TgtOn_LumLoc_AveSem_Stim(:,j),'sr','LineWidth',3);
+
+plot(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),'--ok','LineWidth',3);
+hold on;
+errorbar(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),TgtOn_LumLoc_AveSem_Control(:,j),'sk','LineWidth',3);
+
+legend({'Stim','','Control',''});
+
+xlabel('Relative Luminance Level');
+ylabel('Ave Firing Rate during TgtOn(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+box off
+
+
+ end
+ 
+ %Add title
+
+title_msg=sprintf(' %s, SpikeChannel: %d, TrialNum: %d ',FileName,SpikeChannel,TrialNum);
+a=annotation('textbox',[0.25,0.7,0.3,0.3],'String',title_msg,'FitBoxToText','on');
+a.FontSize=20;
+a.FontWeight='Bold';
+a.LineStyle='none';
+
+%% Stim-NonStim comparison
+FigIndex = FigIndex +1;
+FigNum = FigNum+1;
+
+figtitlestr{FigNum}='DirectionComparisonBetweenStimTrialsAndNonStimTrials_RF';
+fig{FigNum}=PrepareFigure(FigIndex,'w',[50,100, 1200,800],'Name',figtitlestr{FigNum});
+
+
+for i = 1:length(UniqueLum)
+    subplot(ceil(length(UniqueLum)/3),3,i)
+    area([StimOnsetTime_Rel_Stim,StimOffsetTime_Rel_Stim],[max_val_RF,max_val_RF],'FaceColor',Color(i,:),'FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+    hold on
+    
+
+    c = shadedErrorBar(PSTH_Time_FraOn_All, TgtOn_LumRF_Mean_Control{i}, TgtOn_LumRF_Sem_Control{i},'lineprops', {[0.2,0.2,0.2]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    hold on
+     shadedErrorBar(PSTH_Time_FraOn_All, TgtOn_LumRF_Mean_Stim{i}, TgtOn_LumRF_Sem_Stim{i},'lineprops',{Color(i,:)},'transparent',1,'patchSaturation',0.3);
+     
+     xlim(PlotTgtOn);
+
+   set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+
+   set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+   title(sprintf('Luminance: %1.1f',UniqueLum(i)));
+   
+end
+
+% Average stimulation effect
+subplot(2,3,6)
+area([StimOnsetTime_Rel_Stim,StimOffsetTime_Rel_Stim],[max_val_RF,max_val_RF],'FaceColor',[0.5,0.5,0.5],'FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+    hold on
+
+    c = shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Control_Mean_RF, PSTH_Control_Sem_RF,'lineprops', {[0,0,0]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    
+    c = shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Control_Mean_NonRF, PSTH_Control_Sem_NonRF,'lineprops', {[0.1,0.1,0.1]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    hold on
+
+    shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Stim_Mean_NonRF, PSTH_Stim_Sem_NonRF,'lineprops',{[0.5,0,0]},'transparent',1,'patchSaturation',0.3);
+
+    shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Stim_Mean_RF, PSTH_Stim_Sem_RF,'lineprops',{[1,0,0]},'transparent',1,'patchSaturation',0.3);
+     
+     legend({'Control_RF','Control_NonRF','Stim_NonRF','Stim_RF'})
+     xlim(Plot_Stim);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+
+   set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+   title('Overall stimulation effect');
+
+%% Figures to export to show focused information
+FigIndex = FigIndex +1;
+FigNum = FigNum+1;
+
+figtitlestr{FigNum}=sprintf('LumTaskFor%sC%d',FileName,SpikeChannel);
+fig{FigNum}=PrepareFigure(FigIndex,'w',[30,100, 1200,800],'Name',figtitlestr{FigNum});
+
+for i = 1:length(UniqueLum)
+    subplot(ceil(length(UniqueLum)/3)+1,3,i)
+    area([StimOnsetTime_Rel_Stim,StimOffsetTime_Rel_Stim],[max_val_RF,max_val_RF],'FaceColor',Color(i,:),'FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+    hold on
+    
+
+    c = shadedErrorBar(PSTH_Time_FraOn_All, TgtOn_LumRF_Mean_Control{i}, TgtOn_LumRF_Sem_Control{i},'lineprops', {[0.2,0.2,0.2]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    hold on
+     shadedErrorBar(PSTH_Time_FraOn_All, TgtOn_LumRF_Mean_Stim{i}, TgtOn_LumRF_Sem_Stim{i},'lineprops',{Color(i,:)},'transparent',1,'patchSaturation',0.3);
+     
+     xlim(PlotTgtOn);
+
+   set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+
+   set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+   title(sprintf('Luminance: %1.1f',UniqueLum(i)));
+   
+end
+
+% Average stimulation effect
+subplot(ceil(length(UniqueLum)/3)+1,3,(ceil(length(UniqueLum)/3))*3+1)
+area([StimOnsetTime_Rel_Stim,StimOffsetTime_Rel_Stim],[max_val_RF,max_val_RF],'FaceColor',[0.5,0.5,0.5],'FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+    hold on
+
+    c = shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Control_Mean_RF, PSTH_Control_Sem_RF,'lineprops', {[0,0,0]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    
+    c = shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Control_Mean_NonRF, PSTH_Control_Sem_NonRF,'lineprops', {[0.8,0.8,0.8]},'transparent',1,'patchSaturation',0.3);
+    c.mainLine.LineStyle = '--';
+    hold on
+
+    shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Stim_Mean_NonRF, PSTH_Stim_Sem_NonRF,'lineprops',{[0.5,0,0]},'transparent',1,'patchSaturation',0.3);
+
+    shadedErrorBar(PSTH_Time_FraOn_All(sel_tgt), PSTH_Stim_Mean_RF, PSTH_Stim_Sem_RF,'lineprops',{[1,0,0]},'transparent',1,'patchSaturation',0.3);
+     
+     legend({'Control_RF','Control_NonRF','Stim_NonRF','Stim_RF'})
+     xlim(Plot_Stim);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+
+   set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+   title('Overall stimulation effect');
+% Tuning change
+
+for j = 1:length(UniqueAngle)
+     subplot(ceil(length(UniqueLum)/3)+1,3,(ceil(length(UniqueLum)/3))*3+1+j)
+  
+
+plot(UniqueLum,TgtOn_LumLoc_Ave_Stim(:,j),'-or','LineWidth',3);
+hold on;
+errorbar(UniqueLum,TgtOn_LumLoc_Ave_Stim(:,j),TgtOn_LumLoc_AveSem_Stim(:,j),'sr','LineWidth',3);
+
+plot(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),'--ok','LineWidth',3);
+hold on;
+errorbar(UniqueLum,TgtOn_LumLoc_Ave_Control(:,j),TgtOn_LumLoc_AveSem_Control(:,j),'sk','LineWidth',3);
+
+legend({'Stim','','Control',''});
+
+xlabel('Relative Luminance Level');
+ylabel('Ave Firing Rate during TgtOn(Hz)');
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','bold');
+title(sprintf('Angle: %1.1f',UniqueAngle(j)));
+box off
+
+
+end
+
+
+
+%% Behavior quantification
+FigIndex = FigIndex +1;
+FigNum = FigNum+1;
+
+figtitlestr{FigNum}=sprintf('ReactionTime');
+fig{FigNum}=PrepareFigure(FigIndex,'w',[30,100, 1200,800],'Name',figtitlestr{FigNum});
+
+for j = 1:length(UniqueAngle)
+subplot(1,2,j);
+plot(UniqueLum,RT_LocLum_Control_Mean(:,j),'--ok','LineWidth',3);
+hold on
+errorbar(UniqueLum,RT_LocLum_Control_Mean(:,j),RT_LocLum_Control_Sem(:,j),'sk','LineWidth',3);
+
+plot(UniqueLum,RT_LocLum_Stim_Mean(:,j),'-or','LineWidth',3);
+hold on
+errorbar(UniqueLum,RT_LocLum_Stim_Mean(:,j),RT_LocLum_Stim_Sem(:,j),'sr','LineWidth',3);
+
+xlabel('Luminance');
+ylabel('Reaction Time(ms)');
+legend({'Control','','Stim',''});
+title(sprintf('Angle: %1.1d',UniqueAngle(j)));
+set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+box off;
+end
+
+
+
+
+
+
+end %End of ShowFigureFlag
+
+%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Output to
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%files%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Setup output directory
+Workingdirectory=pwd;
+
+
+%Set up output path according to the system
+OperationSystem = computer;%Get the operation system information
+
+if strcmp(OperationSystem(1:3),"PCW")  
+    %PC
+     MarkerFolder='DataHub';
+elseif strcmp(OperationSystem(1:3),"MAC")  
+    %Mac
+     MarkerFolder='DataAnalysis';
+ end
+Flag=strfind(Workingdirectory,MarkerFolder);
+BasicDirectory=Workingdirectory(1:Flag+length(MarkerFolder));
+
+%%%%%%%%%%%Export data%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%OutputFolerName='ForagingTask';
+OutPath=strcat(BasicDirectory,'Results',BasicDirectory(end));%,OutputFolerName);
+if ~exist(OutPath)
+    mkdir(OutPath)
+end
+cd(OutPath);
+FileName=Data.FileName;
+FileName=FileName(1:end-4);
+
+
+%Get File Information
+num = regexp(FileName, '\d+', 'match');
+RecordDateOriginal=cell2mat(num(1));
+
+NeuronNum=cell2mat(num(2));
+ChannelNum=SpikeChannel;
+
+
+%To get the monkey name
+RemainFiles=erase(FileName,RecordDateOriginal);
+Delimiter=find(isstrprop(RemainFiles,'upper')==1);
+MonkeyName=RemainFiles(Delimiter(1):Delimiter(2)-1);
+
+
+%Output file name
+OutputFileName=sprintf('%s_%s_N%s_C%s.mat',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+OutputFigureName=sprintf('%s_%s_N%s_C%s',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+
+
+
+ExistFlag=0;
+%Load the old file if exist
+if exist(OutputFileName)
+
+    load(OutputFileName);
+    %Load OutputData into the memory
+    if isfield(OutputData,'DelaySaccadeTuning')
+    ExistFlag=1;
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%OutputData For current analysis
+OutputData_New=[];
+
+OutputData_New.DelaySaccadeTuning.TrialType='GoodTrials';
+%%%%%%%%%Save overall scene response characteristics%%%%%%%%%%%%%%%%%%%%%%%
+%Organize the data
+NameStr={'PSTH_FR_TgtOn_Time'};
+DataLib={PSTH_Time_FraOn_All};
+
+
+%{
+NameStr={
+    'PSTH_FR_TgtOn_Time','PSTH_FR_TgtOn',...
+    'PSTH_FR_SacOn_Time','PSTH_FR_SacOn',...
+    'PSTH_FR_SacOff_ITI_Time','PSTH_FR_SacOff_ITI',...
+    'SacVec','SacVectTuning_PreDurPost_mean','SacVectTuning_PreDurPost_sem','SacVectTuning_p','Pref_Vect','Pref_Vect_Length',...
+    'TgtVec','TgtVectTuning_mean','TgtVectTuning_sem','TgtVectTuning_p','Pref_TgtVect','Pref_TgtVect_Length',...
+    'SacOnLocMean','SacOnLocSem',...
+    'PSTH_TgtOn_RF','PSTH_SacOn_RF',...
+    'RF_h_v','RF_h_m','CellType',...
+    'PSTH_TgtOn_RF_z','PSTH_SacOn_RF_z'
+    
+    
+};
+
+DataLib={
+    PSTH_Time_FraOn_All,[MeanPSTH_FR_FractalOn_mean',MeanPSTH_FR_FractalOn_sem'],...
+    TimeSequence_SacOn_mean,[PSTH_SacOn_mean',PSTH_SacOn_sem'],...
+    TimeSequence_SacOff_mean,[PSTH_SacOff_mean',PSTH_SacOff_sem'],...
+    SaccadeVector,FiringRate_PreDurPost_mean,FiringRate_PreDurPost_sem,SacVecTuning_p,PrefVector,PrefVector_Amp,...
+    TgtVector,FiringRate_TgtOn_mean,FiringRate_TgtOn_sem,TgtOnVecTuning_p,PrefVectorTgtOn,PrefVector_TgtOnAmp,...
+    SacOn_Loc_Mean,SacOn_Loc_Sem,...
+    PSTH_RF_Mean,PSTH_RF_Sac_Mean,...
+    RF_h_v,RF_h_m,CellTypeCode,...
+    PSTH_RF_Mean_z,PSTH_RF_Sac_Mean_z
+
+    
+};
+
+%}
+
+DataStamp=containers.Map(NameStr,DataLib);
+
+
+
+
+
+OutputData_New.DelaySaccadeTuning.Task=TaskType;
+OutputData_New.DelaySaccadeTuning.TaskCode=TaskCode;
+OutputData_New.DelaySaccadeTuning.DataStamp=DataStamp;
+
+
+%Store figures
+if ShowFigureFlag
+   
+    %OutputData_New.SceneTuning.Figures={fig99,fig100,fig101,fig102};
+    %Output figures in a folder;
+   % FolderName=OutputFigureName;
+   FolderName = 'LuminanceStimTask';
+   
+    if ~exist(FolderName,'dir')
+        mkdir(FolderName);
+    end
+    cd(FolderName);
+    
+    TotalFigure=length(fig);
+    %{
+    for j=1:TotalFigure
+        OutputFigureName=strcat(OutputFigureName,figtitlestr{j},'.jpg');
+        if ~isempty(fig{j})
+        saveas(fig{j},OutputFigureName);
+        end
+        
+    end
+    %}
+     OutputFigureName=strcat(OutputFigureName,figtitlestr{4},'.jpg');
+        if ~isempty(fig{4})
+        saveas(fig{4},OutputFigureName);
+        end
+
+   % disp('Figures have been exported to the neuron folder');
+   disp('Figure4 have been exported to the common folder');
+
+end
+
+if ExistFlag
+%Compare the old one with the new one
+Task_Old=OutputData.DelaySaccadeTuning.TaskCode;
+
+     if Task_Old~=TaskCode
+        %Not the same task, add the new dataset into the old one
+        OutputData.DelaySaccadeTuning(numel(OutputData.DelaySaccadeTuning)+1)=OutputData_New.DelaySaccadeTuning;
+     else
+         %If the same task,the same protocol,replace the old one with the new one
+         
+         OutputData.DelaySaccadeTuning=OutputData_New.DelaySaccadeTuning;
+         
+    
+    
+     end
+else
+    %Output the current file
+   OutputData.DelaySaccadeTuning=OutputData_New.DelaySaccadeTuning; 
+end
+
+
+
+if OutputFlag
+    cd(OutPath);
+    save(OutputFileName,'OutputData');
+    disp('Data Exported');
+else
+    disp('No data export');
+end  
+
+%}
+
+end %End of Spike Channel loop
+
+
+end
+
+function ObjectIndex=ReproduceFromEvent(event,code)
+for i=1:size(event,1)
+    
+    ObjectIndex{i}=event(i,ismember(event(i,:),code));
+    
+  
+    
+end
+numeach=cellfun(@numel,ObjectIndex);
+nummax=max(numeach);
+if nummax==1
+    ObjectIndex=cell2mat(ObjectIndex);
+
+    
+end
+end
+function FR=SelectFringRateInterval(FR_Raw,Time,Interval);
+for i=1:size(Interval,1)
+    if sum(~isnan(Interval(i,:)))==2
+        FR(i)=nanmean(FR_Raw(i,Time>=Interval(i,1) & Time<=Interval(i,2)));
+    else
+         FR(i)=NaN;
+    end
+    
+    
+    
+end
+
+
+
+
+end

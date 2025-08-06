@@ -1,0 +1,359 @@
+function Batch_StableValue(Data,  StartFile, EndFile,ShowFigureFlag,OutputFlag);
+BatchFileName=Data.BatchFileName;
+%Batch data file path
+FilesName=Data.ResultFilePath(StartFile: EndFile);
+RecordDate=Data.RecordDate(StartFile: EndFile);
+FileNum=EndFile-StartFile+1;
+%{
+%Color Definition for each events
+Color=[lines(6);prism(6);pink(6)];
+%Color(2,:)=copper(1)+0.5;
+Color=[Color;hsv(10)];
+Color(18,:)=[0.1,0.457,0.194];
+%}
+%Load file
+index = 1;
+for i=1:length(FilesName)
+  clear OutputData;
+  
+  for j = 1:length(FilesName{i})
+  
+     load(FilesName{i}{j});
+     
+     OutputDataTemp=OutputData;
+
+     if isfield(OutputData,'StableValue')
+     
+        file_use{index} = FilesName{i}{j};
+     
+        Data =OutputData.FreeViewNeural.DataStamp;
+
+        PSTH_Stim_Mean{index} = Data('PSTH_Stim_Mean');
+     
+        AS(index) = Data('AcStrength');
+        Latency(index) = Data('ResponseLatency');
+        p_AS(index) = Data('Ac_p');
+        PMS(index) = Data('PostModulationStrength');
+        PMS_p(index) = Data('PostModulation_p');
+        SM(index) = Data('StimModulation');
+        SM_p(index) = Data('StimModulation_p');
+        PSTH_First{index} = Data('PSTH_FirstHalf');
+         PSTH_Second{index} = Data('PSTH_SecondHalf');
+        AS_First(index) = Data('AS_First');
+        AS_Second(index) = Data('AS_Second');
+        PSTH_Time = Data('PSTH_Time');
+          
+      
+     
+   
+     
+        Data =OutputData.StableValue.DataStamp;
+
+      %  Tgt_Good_RF(index) = Data('TgtGoodRF');
+       % Tgt_Bad_RF(index) = Data('TgtBad_RF');   
+        p_Tgt_RF(index) = Data('p_Tgt_RF');
+
+
+      %  PreTgtGood_RF(index) = Data('PreTgtGood_RF');
+      %  PreTgtBad_RF(index) = Data('PreTgtBad_RF');
+        p_Sac_RF(index) = Data('p_Sac_RF');
+
+        
+
+        PSTH_TgtOn_Prefer_RF{index} = Data('PSTH_TgtOn_Prefer_RF');
+        PSTH_TgtOn_nonPrefer_RF{index} = Data('PSTH_TgtOn_nonPrefer_RF');
+        PSTH_TgtOn_Prefer_nonRF{index} = Data('PSTH_TgtOn_Prefer_nonRF');
+        PSTH_TgtOn_nonPrefer_nonRF{index} = Data('PSTH_TgtOn_nonPrefer_nonRF');
+
+        PSTH_SacOn_Prefer_RF{index} = Data('PSTH_SacOn_Prefer_RF');
+        PSTH_SacOn_nonPrefer_RF{index} = Data('PSTH_SacOn_nonPrefer_RF');
+        PSTH_SacOn_Prefer_nonRF{index} = Data('PSTH_SacOn_Prefer_nonRF');
+        PSTH_SacOn_nonPrefer_nonRF{index} = Data('PSTH_SacOn_nonPrefer_nonRF');
+
+        PSTH_Time_TgtOn = Data('Time_TgtOn');
+        PSTH_Time_SacOn = Data('Time_SacOn');
+
+     
+
+
+          
+     
+     index = index +1;
+     end % Endof if isfield 
+
+
+    
+
+  end
+     
+     
+     
+end
+
+Diff_TgtOn = p_Tgt_RF < 0.05;
+Diff_SacOn = p_Sac_RF < 0.05;
+
+SigDiff = SM_p<0.05;
+NonSigDiff = ~SigDiff;
+
+PSTH_Prefer_TgtOn_RF = cell2mat(PSTH_TgtOn_Prefer_RF');
+PSTH_nonPrefer_TgtOn_RF = cell2mat(PSTH_TgtOn_nonPrefer_RF');
+
+PSTH_Prefer_SacOn_nonRF = cell2mat(PSTH_SacOn_Prefer_RF');
+PSTH_nonPrefer_SacOn_nonRF = cell2mat(PSTH_SacOn_Prefer_nonRF');
+
+PSTH_Prefer_SacOn_RF = cell2mat(PSTH_SacOn_Prefer_RF');
+PSTH_nonPrefer_SacOn_RF = cell2mat(PSTH_nonPrefer_SacOn_RF');
+
+PSTH_Prefer_TgtOn_nonRF = cell2mat(PSTH_Prefer_TgtOn_nonRF');
+PSTH_nonPrefer_TgtOn_nonRF = cell2mat(PSTH_nonPrefer_TgtOn_nonRF');
+
+%For opto-tagged neurons
+
+
+PSTH_Prefer_TgtOn_RF_Mean = nanmean(PSTH_Prefer_TgtOn_RF(SigDiff,:),1);
+PSTH_nonPrefer_TgtOn_RF_Mean = nanmean(PSTH_nonPrefer_TgtOn_RF(SigDiff,:),1);
+
+PSTH_Prefer_TgtOn_RF_Sem = nanstd(PSTH_Prefer_TgtOn_RF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+PSTH_nonPrefer_TgtOn_RF_Sem = nanstd(PSTH_nonPrefer_TgtOn_RF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+
+
+
+
+PSTH_Prefer_SacOn_RF_Mean = nanmean(PSTH_Prefer_SacOn_RF(SigDiff,:),1);
+PSTH_nonPrefer_SacOn_RF_Mean = nanmean(PSTH_nonPrefer_SacOn_RF(SigDiff,:),1);
+
+PSTH_Prefer_SacOn_RF_Sem = nanstd(PSTH_Prefer_SacOn_RF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+PSTH_nonPrefer_SacOn_RF_Sem = nanstd(PSTH_nonPrefer_SacOn_RF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+
+
+
+
+PSTH_Prefer_TgtOn_nonRF_Mean = nanmean(PSTH_Prefer_TgtOn_nonRF(SigDiff,:),1);
+PSTH_nonPrefer_TgtOn_nonRF_Mean = nanmean(PSTH_nonPrefer_TgtOn_nonRF(SigDiff,:),1);
+
+PSTH_Prefer_TgtOn_nonRF_Sem = nanstd(PSTH_Prefer_TgtOn_nonRF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+PSTH_nonPrefer_TgtOn_nonRF_Sem = nanstd(PSTH_nonPrefer_TgtOn_nonRF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+
+
+
+
+PSTH_Prefer_SacOn_nonRF_Mean = nanmean(PSTH_Prefer_SacOn_nonRF(SigDiff,:),1);
+PSTH_nonPrefer_SacOn_nonRF_Mean = nanmean(PSTH_nonPrefer_SacOn_nonRF(SigDiff,:),1);
+
+PSTH_Prefer_SacOn_nonRF_Sem = nanstd(PSTH_Prefer_SacOn_nonRF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+PSTH_nonPrefer_SacOn_nonRF_Sem = nanstd(PSTH_nonPrefer_SacOn_nonRF(SigDiff,:),[],1)/sqrt(sum(SigDiff));
+
+
+%For nonopto-tagged neurons
+
+PSTH_Prefer_TgtOn_RF_Mean_nontag = nanmean(PSTH_Prefer_TgtOn_RF(NonSigDiff,:),1);
+PSTH_nonPrefer_TgtOn_RF_Mean_nontag = nanmean(PSTH_nonPrefer_TgtOn_RF(NonSigDiff,:),1);
+
+PSTH_Prefer_TgtOn_RF_Sem_nontag = nanstd(PSTH_Prefer_TgtOn_RF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+PSTH_nonPrefer_TgtOn_RF_Sem_nontag = nanstd(PSTH_nonPrefer_TgtOn_RF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+
+
+
+
+PSTH_Prefer_SacOn_RF_Mean_nontag = nanmean(PSTH_Prefer_SacOn_RF(NonSigDiff,:),1);
+PSTH_nonPrefer_SacOn_RF_Mean_nontag = nanmean(PSTH_nonPrefer_SacOn_RF(NonSigDiff,:),1);
+
+PSTH_Prefer_SacOn_RF_Sem_nontag = nanstd(PSTH_Prefer_SacOn_RF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+PSTH_nonPrefer_SacOn_RF_Sem_nontag = nanstd(PSTH_nonPrefer_SacOn_RF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+
+
+
+
+PSTH_Prefer_TgtOn_nonRF_Mean_nontag = nanmean(PSTH_Prefer_TgtOn_nonRF(NonSigDiff,:),1);
+PSTH_nonPrefer_TgtOn_nonRF_Mean_nontag = nanmean(PSTH_nonPrefer_TgtOn_nonRF(NonSigDiff,:),1);
+
+PSTH_Prefer_TgtOn_nonRF_Sem_nontag = nanstd(PSTH_Prefer_TgtOn_nonRF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+PSTH_nonPrefer_TgtOn_nonRF_Sem_nontag = nanstd(PSTH_nonPrefer_TgtOn_nonRF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+
+
+
+
+PSTH_Prefer_SacOn_nonRF_Mean_nontag = nanmean(PSTH_Prefer_SacOn_nonRF(NonSigDiff,:),1);
+PSTH_nonPrefer_SacOn_nonRF_Mean_nontag = nanmean(PSTH_nonPrefer_SacOn_nonRF(NonSigDiff,:),1);
+
+PSTH_Prefer_SacOn_nonRF_Sem_nontag = nanstd(PSTH_Prefer_SacOn_nonRF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+PSTH_nonPrefer_SacOn_nonRF_Sem_nontag = nanstd(PSTH_nonPrefer_SacOn_nonRF(NonSigDiff,:),[],1)/sqrt(sum(NonSigDiff));
+
+
+
+if ShowFigureFlag
+    
+FigureStartNum=100;
+FigureIndex=1;
+    
+figtitlestr{FigureIndex}='PSTH_PrevsNonpre_OptoTaged';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 500,600],'Name',figtitlestr{FigureIndex});
+ax1 = subplot(2,2,1);
+
+plot(PSTH_Time_TgtOn,PSTH_Prefer_TgtOn_RF_Mean,'-r');
+hold on
+plot(PSTH_Time_TgtOn,PSTH_nonPrefer_TgtOn_RF_Mean,'-b');
+
+title('Contralateral(TgtOn)')
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+%ylim([0,160]);
+box off
+
+ ax2 = subplot(2,2,2);
+
+
+ plot(PSTH_Time_SacOn,PSTH_Prefer_SacOn_RF_Mean,'-r');
+hold on
+plot(PSTH_Time_SacOn,PSTH_nonPrefer_SacOn_RF_Mean,'-b');
+title('Contralateral(SacOn)')
+
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ylim([-2,40])
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off
+
+ax3 = subplot(2,2,3);
+
+plot(PSTH_Time_TgtOn,PSTH_Prefer_TgtOn_nonRF_Mean,'-r');
+hold on
+plot(PSTH_Time_TgtOn,PSTH_nonPrefer_TgtOn_nonRF_Mean,'-b');
+
+title('Ipsilateral(TgtOn)')
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+%ylim([0,160]);
+box off
+
+ ax4 = subplot(2,2,4);
+
+
+ plot(PSTH_Time_SacOn,PSTH_Prefer_SacOn_nonRF_Mean,'-r');
+hold on
+plot(PSTH_Time_SacOn,PSTH_nonPrefer_SacOn_nonRF_Mean,'-b');
+title('Ipsilateral(SacOn)')
+
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ylim([-2,40])
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off
+
+linkaxes([ax1 ax2 ax3 ax4],'y');
+
+%}
+%%
+FigureStartNum = FigureStartNum + 1;
+FigureIndex = FigureIndex + 1;
+    
+figtitlestr{FigureIndex}='PSTH_PrevsNonpre_NotOptoTaged';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 500,600],'Name',figtitlestr{FigureIndex});
+ax1 = subplot(2,2,1);
+
+plot(PSTH_Time_TgtOn,PSTH_Prefer_TgtOn_RF_Mean_nontag,'-r');
+hold on
+plot(PSTH_Time_TgtOn,PSTH_nonPrefer_TgtOn_RF_Mean_nontag,'-b');
+
+title('Contralateral(TgtOn)')
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+%ylim([0,160]);
+box off
+
+ ax2 = subplot(2,2,2);
+
+
+ plot(PSTH_Time_SacOn,PSTH_Prefer_SacOn_RF_Mean_nontag,'-r');
+hold on
+plot(PSTH_Time_SacOn,PSTH_nonPrefer_SacOn_RF_Mean_nontag,'-b');
+title('Contralateral(SacOn)')
+
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ylim([-2,40])
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off
+
+ax3 = subplot(2,2,3);
+
+plot(PSTH_Time_TgtOn,PSTH_Prefer_TgtOn_nonRF_Mean_nontag,'-r');
+hold on
+plot(PSTH_Time_TgtOn,PSTH_nonPrefer_TgtOn_nonRF_Mean_nontag,'-b');
+
+title('Ipsilateral(TgtOn)')
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+%ylim([0,160]);
+box off
+
+ ax4 = subplot(2,2,4);
+
+
+ plot(PSTH_Time_SacOn,PSTH_Prefer_SacOn_nonRF_Mean_nontag,'-r');
+hold on
+plot(PSTH_Time_SacOn,PSTH_nonPrefer_SacOn_nonRF_Mean_nontag,'-b');
+title('Ipsilateral(SacOn)')
+
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ylim([-2,40])
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off
+
+linkaxes([ax1 ax2 ax3 ax4],'y');
+
+%}
+%% 
+FigureStartNum = FigureStartNum + 1;
+FigureIndex = FigureIndex + 1;
+    
+figtitlestr{FigureIndex}='Summary';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 500,600],'Name',figtitlestr{FigureIndex});
+subplot(2,2,1);
+b = bar(Mat_dist','stacked');
+b(1).FaceColor = 'r';
+b(2).FaceColor = 'b';
+xticks([1,2]);
+xticklabels({'Tag','Non-tag'});
+yticks([0,0.5,1]);
+legend({'Sig','Non-sig'});
+ylabel('Proportion of neurons');
+
+box off
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+
+
+subplot(2,2,2);
+b = bar([1,2],[Pro_E_tag,Pro_I_tag]);
+b.FaceColor = 'flat';
+b.CData =[[1,0,0];[0,0,1]]; 
+
+xticks([1,2]);
+xticklabels({'Exc','Inh'});
+yticks([0,0.5,1]);
+ylabel('Proportion');
+
+box off
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+
+subplot(2,2,3)
+histogram(Latency_sig,'BinWidth',10,'FaceColor','r','LineWidth',3);
+xlim([-10,100]);
+ylabel('Number of neurons');
+xlabel('Latency of Opto-stim');
+title('Sig Loc Value');
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off;
+
+subplot(2,2,4)
+histogram(Latency_nonsig,'BinWidth',10,'FaceColor','k','LineWidth',3);
+ylabel('Number of neurons');
+xlim([-10,100]);
+ylabel('Number of neurons');
+xlabel('Latency of Opto-stim');
+title('NonSig Loc Value');
+set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+box off;
+
+end
+
+
+end
