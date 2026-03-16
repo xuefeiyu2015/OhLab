@@ -1,0 +1,1301 @@
+function FreeViewEyeMovement_Vari(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+ECode;
+
+TaskType=Data.TaskType;
+DataPath= Data.Path;
+FileName=Data.FileName;
+TaskCode=Data.TaskCode;
+TaskType=Data.TaskType;
+
+
+
+Selection=StartTrial:EndTrial;%Select the trials according to the pannel
+
+if FileName(1)=='R'
+    Monkey = 1;
+else
+    Monkey = 2;
+end
+
+
+%Sequence information from the library
+ParaLib=Data.ParaLib;
+if ismember('stimOn',keys(ParaLib))
+   stimOnFlag = ParaLib('stimOn');
+   TrialStimOn = unique(stimOnFlag(stimOnFlag(:,2) == 1,1));
+   stimOn = [Selection',0*ones(length(Selection),1)];
+   stimOn(ismember(stimOn(:,1),TrialStimOn),2) = 1;
+  
+   stimOn= stimOn(:,2);
+%   stimOn=stimOn(Selection,:);
+   
+end
+
+if ismember('stimPower',keys(ParaLib))
+   stimPower_ori = ParaLib('stimPower');
+   stimPower_ori=stimPower_ori(:,2);
+   
+  
+   
+end
+
+
+
+
+
+if ismember('preStimDur,StimDur,PostStimDur',keys(ParaLib))
+   stimdur_info = ParaLib('preStimDur,StimDur,PostStimDur');
+   stimDur=stimdur_info(:,3);
+   
+  % stimDur=stimDur(Selection,:);
+   
+end
+
+%Manuel Modification of the power by mistake
+if ismember(FileName,{'Adams041624VIDEOVIEW1.rst','Adams040324VIDEOVIEW1.rst','Robin061423VIDEOVIEW1.rst','Robin062223VIDEOVIEW1.rst','Robin071323VIDEOVIEW1.rst','Robin072023VIDEOVIEW1.rst','Robin072723VIDEOVIEW1.rst'})
+    stimPower = RescuePower(FileName,stimPower_ori);
+    
+else
+    stimPower = stimPower_ori;
+end
+
+% stimPower=stimPower(Selection,:);
+
+
+
+ if ismember('stimChannel',keys(ParaLib))
+   stimChannel_ori = ParaLib('stimChannel');
+   stimChannel_ori=stimChannel_ori(:,2);
+  
+   
+else
+    if ismember(FileName,{'Robin072523VIDEOVIEW1.rst','Robin072723VIDEOVIEW1.rst','Robin072823VIDEOVIEW1.rst'})
+        if ismember(FileName,{'Robin072823VIDEOVIEW1.rst'})
+
+            stimChannel_ori=ones(size(stimPower_ori,1),1);
+            stimChannel_ori(81:160)=2;%Red light
+             stimChannel_ori(561:end)=2;%Red light
+
+        end
+
+        if ismember(FileName,{'Robin072723VIDEOVIEW1.rst'})
+
+            stimChannel_ori=ones(size(stimPower_ori,1),1);
+            stimChannel_ori(1121:end)=2;%Red light
+             
+
+        end
+        if ismember(FileName,{'Robin072523VIDEOVIEW1.rst'})
+
+            stimChannel_ori=ones(size(stimPower_ori,1),1);
+            stimChannel_ori(1281:end)=2;%Red light
+             
+
+        end
+
+    else
+        disp('No channel information, autofilled');
+        stimChannel_ori=ones(size(stimPower_ori,1),1);
+
+    end
+   
+end
+
+%Select all stimChannel == 1
+%{
+SelectChannel = find(stimChannel_ori==1);
+
+Selection = intersect(SelectChannel,Selection);
+
+ stimDur=stimDur(Selection,:);
+ stimPower=stimPower(Selection,:);
+
+stimChannel=stimChannel_ori(Selection);
+%}
+
+
+%Criterias for sexwlecting saccades
+V_Threshold=40;
+ContinueBin=5;
+ISI_Threshold=20;
+
+
+%% SAVE THE SPIKE CHANNEL
+SpikeChannelWhole=Data.SpikeChannel;
+SpikeTimeWhole=Data.SpikeTimeData(:,:,Selection);
+ChannelIDWhole=Data.ChannelID;
+ClusterIDWhole=Data.ClusterID;
+
+MultiChannel=0;
+if length(SpikeChannelWhole)>1
+    MultiChannel=1;
+    
+end
+
+for spk=1:length(SpikeChannelWhole)
+    SpikeChannel=SpikeChannelWhole(spk);
+    
+        SpikeTime=squeeze(SpikeTimeWhole(spk,:,:))';
+        %{
+    if SpikeChannel<4
+        SpikeTime = SpikeTime;%Correct for the delay of online channel
+    end
+        %}
+    ChannelID=ChannelIDWhole(spk);
+    ClusterID=ClusterIDWhole(spk);
+    
+
+
+
+%GetEyeData
+EyeData=Data.EyeDataRaw;
+EyeChannel_X_L=EyeData(Selection,1);
+EyeChannel_Y_L=EyeData(Selection,2);
+%EyeChannel_X_R=EyeData(Selection,3);
+%EyeChannel_Y_R=EyeData(Selection,4);
+Eye_Eccentricity=cellfun(@(x,y) sqrt(x.^2+y.^2),EyeChannel_X_L,EyeChannel_Y_L,'uniform',0);
+
+
+
+
+EyeBinWidth=Data.EyeBinWidth;
+EyeCalInfo=Data.EyeCalInfo;%Each row: X_Gain,X_Bias; Y_Gain; Y_bias; X=(raw+X_bias)*X_Gain
+EyeCalInfo_L=EyeCalInfo(1,:);
+
+EyeTime = 0: EyeBinWidth:max(cellfun(@numel,EyeChannel_X_L))-EyeBinWidth;
+
+%Load event data
+EventChannel=Data.EventChannel(Selection,:);
+EventTimeChannel=Data.EventTimeChannel(Selection,:);
+EventBin=Data.EventBin(Selection,:);
+
+
+%Select the eyetrace during the "fixation"
+TaskStartBin=FindOutTime(EventChannel,EventBin,SHOWFIXCD);
+TaskEndBin=FindOutTime(EventChannel,EventBin,FIXOFF);
+
+EyeChannel_X_Task= SelectEyeInterval(EyeChannel_X_L,TaskStartBin,TaskEndBin)';
+EyeChannel_Y_Task= SelectEyeInterval(EyeChannel_Y_L,TaskStartBin,TaskEndBin)';
+
+EyeChannel_X_Task=ReorganizeEye(EyeChannel_X_Task);
+EyeChannel_Y_Task=ReorganizeEye(EyeChannel_Y_Task);
+
+Eye_Eccentricity_Task=SelectEyeInterval(Eye_Eccentricity,TaskStartBin,TaskEndBin)';
+Eye_Eccentricity_Task=ReorganizeEye(Eye_Eccentricity_Task);
+
+EyeTime_Task=0:EyeBinWidth:size(Eye_Eccentricity_Task,2)-EyeBinWidth;
+
+
+
+%Select the eye trace during the 100pre-stim, 100 stim, 100 post stim
+%period
+
+
+StimStartBin=FindOutTime(EventChannel,EventBin,PRE_STIM);
+StimEndBin=FindOutTime(EventChannel,EventBin,PST_STIM );
+
+EyeChannel_X_Stim= SelectEyeInterval(EyeChannel_X_L,StimStartBin,StimEndBin)';
+EyeChannel_Y_Stim= SelectEyeInterval(EyeChannel_Y_L,StimStartBin,StimEndBin)';
+
+EyeChannel_X_Stim=ReorganizeEye(EyeChannel_X_Stim);
+EyeChannel_Y_Stim=ReorganizeEye(EyeChannel_Y_Stim);
+
+EyeTime_Stim = 0:EyeBinWidth:size(EyeChannel_X_Stim,2)-EyeBinWidth;
+
+
+
+
+MarkerTime = FindOutTime(EventChannel,EventBin,ON_STIM)-StimStartBin;
+
+Interval = [-100,nanmean(StimEndBin-FindOutTime(EventChannel,EventBin,ON_STIM))];
+%Interval=[-100,200];
+%StimDur = [0,nanmean(FindOutTime(EventChannel,EventBin,OFF_STIM)- FindOutTime(EventChannel,EventBin,ON_STIM))];
+
+EyeChannel_X_StimAlign = AlignEyeData(EyeChannel_X_Stim,EyeTime_Stim,MarkerTime,Interval);
+EyeChannel_Y_StimAlign = AlignEyeData(EyeChannel_Y_Stim,EyeTime_Stim,MarkerTime,Interval);
+
+NormX = nanmean(EyeChannel_X_StimAlign(:,1:100),2);
+NormY = nanmean(EyeChannel_Y_StimAlign(:,1:100),2);
+
+EyeChannel_X_StimAlign_Norm = EyeChannel_X_StimAlign-NormX;
+EyeChannel_Y_StimAlign_Norm = EyeChannel_Y_StimAlign-NormY;
+
+EyeTime_Stim_Align=Interval(1):EyeBinWidth:Interval(2)+EyeBinWidth;
+%Analysis saccades during the whole "fixation" period
+%{
+%Save an example file for illustration of the select saccade procedural
+DataPath= Data.Path;
+path=DataPath;
+
+cd(path);
+EyeX = EyeChannel_X_StimAlign;
+EyeY = EyeChannel_Y_StimAlign;
+
+save('EyeX','EyeX');
+save('EyeY','EyeY');
+%}
+Saccades=SelectSaccade(EyeChannel_X_Stim,EyeChannel_Y_Stim,EyeBinWidth,V_Threshold,ContinueBin,ISI_Threshold);
+
+%SaccadeNumber=arrayfun(@(x)  x.NumOfSaccade,Saccades)';
+SaccadeAngle=arrayfun(@(x)  x.SaccadeAngle,Saccades,'UniformOutput' ,0)';
+SaccadeAmplitude=arrayfun(@(x)  x.SaccadeAmplitude,Saccades,'UniformOutput' ,0)';
+
+SaccadeStartTime_ori=arrayfun(@(x)  x.SaccadeStartTime,Saccades,'UniformOutput' ,0)';
+SaccadeEndTime_ori=arrayfun(@(x)  x.SaccadeEndTime,Saccades,'UniformOutput' ,0)';
+
+SaccadeStartPoint=arrayfun(@(x)  x.SaccadeStartPoint,Saccades,'UniformOutput' ,0)';
+SaccadeEndPoint=arrayfun(@(x)  x.SaccadeEndPoint,Saccades,'UniformOutput' ,0)';
+
+
+%Screen out the valid saccades and saccade start time severas
+
+AmplitudeThreshold=5;
+TimeThreshold=0;
+
+%TimeThresholdEnd=num2cell(MaxTimeLength-PlotSacPostBuffer);
+%{
+SaccadeAngle_ITI=fillinNaNs(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)))',SaccadeAmplitude,SaccadeEndTime,SaccadeAngle,TimeThresholdEnd,'UniformOutput' ,0));
+SaccadeEndPoint_ITI=(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)),:)',SaccadeAmplitude,SaccadeEndTime,SaccadeEndPoint,TimeThresholdEnd,'UniformOutput' ,0));
+SaccadeStartPoint_ITI=(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)),:)',SaccadeAmplitude,SaccadeEndTime,SaccadeStartPoint,TimeThresholdEnd,'UniformOutput' ,0));
+%}
+
+SaccadeAngle=fillinNaNs(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)))',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeAngle,'UniformOutput' ,0));
+SaccadeEndPoint=(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)),:)',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeEndPoint,'UniformOutput' ,0));
+SaccadeStartPoint=(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)),:)',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeStartPoint,'UniformOutput' ,0));
+
+
+
+SaccadeNumInEachTrial=cellfun(@(x) size(x,2),SaccadeEndPoint);
+
+SaccadeEndPoint_X=NaN*ones(length(SaccadeNumInEachTrial),max(SaccadeNumInEachTrial));
+SaccadeEndPoint_Y=NaN*ones(length(SaccadeNumInEachTrial),max(SaccadeNumInEachTrial));
+
+SaccadeStartPoint_X=NaN*ones(length(SaccadeNumInEachTrial),max(SaccadeNumInEachTrial));
+SaccadeStartPoint_Y=NaN*ones(length(SaccadeNumInEachTrial),max(SaccadeNumInEachTrial));
+
+
+SaccadeEndPoint_X(SaccadeNumInEachTrial>0,:)=fillinNaNs(cellfun(@(x) x(1,:),SaccadeEndPoint(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+SaccadeEndPoint_Y(SaccadeNumInEachTrial>0,:)=fillinNaNs(cellfun(@(x) x(2,:),SaccadeEndPoint(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+
+SaccadeStartPoint_X(SaccadeNumInEachTrial>0,:)=fillinNaNs(cellfun(@(x) x(1,:),SaccadeStartPoint(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+SaccadeStartPoint_Y(SaccadeNumInEachTrial>0,:)=fillinNaNs(cellfun(@(x) x(2,:),SaccadeStartPoint(SaccadeNumInEachTrial>0,:),'UniformOutput' ,0));
+
+%{
+SaccadeStartTime_ITI=fillinNaNs(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)),:)',SaccadeAmplitude,SaccadeStartTime,SaccadeStartTime,TimeThresholdEnd,'UniformOutput' ,0));
+SaccadeEndTime_ITI=fillinNaNs(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)),:)',SaccadeAmplitude,SaccadeStartTime,SaccadeEndTime,TimeThresholdEnd,'UniformOutput' ,0));
+
+
+SaccadeAmplitude_ITI=fillinNaNs(cellfun(@(x,y,z,m) z(((x>AmplitudeThreshold)&(y<=m)),:)',SaccadeAmplitude,SaccadeStartTime,SaccadeAmplitude,TimeThresholdEnd,'UniformOutput' ,0));
+%}
+%
+
+SaccadeStartTime=fillinNaNs(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)),:)',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeStartTime_ori,'UniformOutput' ,0));
+SaccadeEndTime=fillinNaNs(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)),:)',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeEndTime_ori,'UniformOutput' ,0));
+
+
+SaccadeAmplitude=fillinNaNs(cellfun(@(x,y,z) z(((x>AmplitudeThreshold)&(y>TimeThreshold)),:)',SaccadeAmplitude,SaccadeStartTime_ori,SaccadeAmplitude,'UniformOutput' ,0));
+
+%SaccadeAngle
+
+%Transform to relative to contralateral side 
+if Monkey==2
+    SaccadeAngle=360-SaccadeAngle;
+    disp('Transform to relative to contralateral site for Adams');
+end
+
+
+%Seperate into stim trial and sham trial
+StimType=ReproduceFromEvent(EventChannel,[STIM1,SHAM0])';
+
+StimTrial = StimType == STIM1;
+ControlTrial = ~StimTrial;
+
+SaccadeAmp_Stim = SaccadeAngle(StimTrial,:);
+SaccadeAmp_Stim = reshape(SaccadeAmp_Stim,1,numel(SaccadeAmp_Stim));
+SaccadeAmp_Stim = SaccadeAmp_Stim(~isnan(SaccadeAmp_Stim));
+
+SaccadeAmp_Control = SaccadeAngle(ControlTrial,:);
+
+SaccadeAmp_Control = reshape(SaccadeAmp_Control,1,numel(SaccadeAmp_Control));
+SaccadeAmp_Control = SaccadeAmp_Control(~isnan(SaccadeAmp_Control));
+
+
+SeparationPoint=[22.5:22.5:360];
+ 
+SaccadeVectorTuning=PoloarHistGroup(SaccadeAmp_Stim,ones(size(SaccadeAmp_Stim,2),1),SeparationPoint);
+SaccadeVector=SaccadeVectorTuning.Center;
+NumberOfAngle_Stim=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+NumberOfAngle_Stim_Sem=SaccadeVectorTuning.DataSEM;
+ 
+PrefVectorNum_Stim=SaccadeVectorTuning.PrefVectorNum;
+PrefVector_AmpNum_Stim=SaccadeVectorTuning.PrefVector_AmpNum;
+
+SaccadeVectorTuning=PoloarHistGroup(SaccadeAmp_Control,ones(size(SaccadeAmp_Control,2),1),SeparationPoint);
+
+NumberOfAngle_Control=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+ 
+PrefVectorNum_Control=SaccadeVectorTuning.PrefVectorNum;
+PrefVector_AmpNum_Control=SaccadeVectorTuning.PrefVector_AmpNum;
+NumberOfAngle_Control_Sem=SaccadeVectorTuning.DataSEM;
+
+%Normalized raw eye trace, separate into stim trials and control trials
+EyeX_Stim = EyeChannel_X_StimAlign_Norm(StimTrial,:);
+EyeY_Stim = EyeChannel_Y_StimAlign_Norm(StimTrial,:);
+
+EyeX_Control = EyeChannel_X_StimAlign_Norm(ControlTrial,:);
+EyeY_Control= EyeChannel_Y_StimAlign_Norm(ControlTrial,:);
+
+
+%Raw saccade vector grill plot
+
+X_Comp = SaccadeEndPoint_X-SaccadeStartPoint_X;
+Y_Comp = SaccadeEndPoint_Y-SaccadeStartPoint_Y;
+%{
+SaccadeStartPoint_X_Stim=SaccadeStartPoint_X(StimTrial,:);
+SaccadeStartPoint_Y_Stim=SaccadeStartPoint_Y(StimTrial,:);
+
+SaccadeStartPoint_X_Stim_Line = reshape(SaccadeStartPoint_X_Stim,[],1);
+SaccadeStartPoint_Y_Stim_Line = reshape(SaccadeStartPoint_Y_Stim,[],1);
+
+SaccadeStartPoint_X_Control=SaccadeStartPoint_X(ControlTrial,:);
+SaccadeStartPoint_Y_Control=SaccadeStartPoint_Y(ControlTrial,:);
+
+SaccadeStartPoint_X_Control_Line = reshape(SaccadeStartPoint_X_Control,[],1);
+SaccadeStartPoint_Y_Control_Line = reshape(SaccadeStartPoint_Y_Control,[],1);
+
+
+SaccadeEndPoint_X_Stim=SaccadeEndPoint_X(StimTrial,:);
+SaccadeEndPoint_Y_Stim=SaccadeEndPoint_Y(StimTrial,:);
+
+SaccadeEndPoint_X_Stim_Line = reshape(SaccadeEndPoint_X_Stim,[],1);
+SaccadeEndPoint_Y_Stim_Line = reshape(SaccadeEndPoint_Y_Stim,[],1);
+
+
+
+
+
+SaccadeEndPoint_X_Control=SaccadeEndPoint_X(ControlTrial,:);
+SaccadeEndPoint_Y_Control=SaccadeEndPoint_Y(ControlTrial,:);
+
+SaccadeEndPoint_X_Control_Line = reshape(SaccadeEndPoint_X_Control,[],1);
+SaccadeEndPoint_Y_Control_Line = reshape(SaccadeEndPoint_Y_Control,[],1);
+
+X_Comp_Control = SaccadeEndPoint_X_Control_Line - SaccadeStartPoint_X_Control_Line;
+Y_Comp_Control = SaccadeEndPoint_Y_Control_Line - SaccadeStartPoint_Y_Control_Line;
+
+X_Comp_Stim = SaccadeEndPoint_X_Stim_Line - SaccadeStartPoint_X_Stim_Line;
+Y_Comp_Stim = SaccadeEndPoint_Y_Stim_Line - SaccadeStartPoint_Y_Stim_Line;
+
+SaccadeEndPoint_X_Line = reshape(SaccadeEndPoint_X,[],1);
+SaccadeEndPoint_Y_Line = reshape(SaccadeEndPoint_Y,[],1);
+
+SaccadeStartPoint_X_Line = reshape(SaccadeStartPoint_X,[],1);
+SaccadeStartPoint_Y_Line = reshape(SaccadeStartPoint_Y,[],1);
+
+X_Comp = SaccadeEndPoint_X_Line - SaccadeStartPoint_X_Line;
+Y_Comp = SaccadeEndPoint_Y_Line - SaccadeStartPoint_Y_Line;
+
+
+%Reorder for the plot according to the y component
+X_Comp_Control = X_Comp_Control(~isnan(X_Comp_Control));
+Y_Comp_Control = Y_Comp_Control(~isnan(Y_Comp_Control));
+
+X_Comp_Stim = X_Comp_Stim(~isnan(X_Comp_Stim));
+Y_Comp_Stim = Y_Comp_Stim(~isnan(Y_Comp_Stim));
+
+
+
+
+ [val,Index_Control]= sort(Y_Comp_Control,'ascend');
+ [val,Index_Stim]= sort(Y_Comp_Stim,'ascend');
+
+
+X_Comp_Control = X_Comp_Control(Index_Control);
+Y_Comp_Control = Y_Comp_Control(Index_Control);
+
+X_Comp_Stim = X_Comp_Stim(Index_Stim);
+Y_Comp_Stim = Y_Comp_Stim(Index_Stim);
+%}
+
+%Saccade timing
+
+%Align eye time relative to stimulation
+SaccadeStartTime = SaccadeStartTime+Interval(1);
+SaccadeTime_Stim =SaccadeStartTime(StimTrial,:);
+SaccadeTime_Control =SaccadeStartTime(ControlTrial,:);
+
+SaccadeTime_Stim=[SaccadeTime_Stim,NaN*ones(size(SaccadeTime_Stim,1),2)];
+SaccadeTime_Control=[SaccadeTime_Control,NaN*ones(size(SaccadeTime_Control,1),2)];
+
+
+SaccadeTime_Stim_line = reshape(SaccadeTime_Stim,1,numel(SaccadeTime_Stim));
+SaccadeTime_Stim_line = SaccadeTime_Stim_line(~isnan(SaccadeTime_Stim_line));
+
+SaccadeTime_Control_line = reshape(SaccadeTime_Control,1,numel(SaccadeTime_Control));
+SaccadeTime_Control_line = SaccadeTime_Control_line(~isnan(SaccadeTime_Control_line));
+
+StepSize = 5;
+BinWidth = 5;
+SelectIntervalTime = repmat(Interval,size(SaccadeStartTime,1),1);
+
+%SaccadeStartTime = [SaccadeStartTime,NaN*ones(size(SaccadeStartTime,1),2)];
+
+[SaccadeRate,TimeSequence,SaccadeCount]=CalculateSpikeFiringRate(SaccadeStartTime ,StepSize,BinWidth,SelectIntervalTime);
+
+
+
+
+
+%% Plot according to the power and duration
+UniquePower = uniquetol(stimPower,0.001);
+UniqueDur = unique(stimDur);
+FixDur = 100; %compare stimulation with different power with stimulating duration equal 100ms;
+try
+FixPower = uniquetol(stimPower(stimDur == 200),0.001);
+catch
+FixPower = uniquetol(stimPower(stimDur == 100),0.001);
+end
+%}
+if isempty(FixPower)
+    FixPower = uniquetol(stimPower(stimDur == 50),0.001);
+    
+end
+if length(UniqueDur) ==1
+    FixPower = max(UniquePower);
+end
+if length(FixPower) > 1
+    FixPower = max(FixPower);
+end
+ ContinousBin = 3;
+ 
+
+% First vary power:
+interval_tmp = StimEndBin-FindOutTime(EventChannel,EventBin,ON_STIM);
+maxcount_p = 0;
+SelectIntervalCompare = [0,100];
+
+for i = 1:length(UniquePower)
+    sel = stimPower == UniquePower(i) & stimDur == FixDur;
+    %Raster
+    SaccadeTime_Stim_p{i} = SaccadeStartTime(sel & StimTrial,:);  
+    SaccadeTime_Control_p{i} = SaccadeStartTime(sel & ControlTrial,:);
+    
+    SaccadeCountStim_p{i}=nansum(SaccadeCount(sel & StimTrial,:));
+    SaccadeCountControl_p{i}=nansum(SaccadeCount(sel & ControlTrial,:));
+    
+    maxcount_tmp = max(max(SaccadeCountStim_p{i}),max(SaccadeCountControl_p{i}));
+    
+    if maxcount_tmp>maxcount_p
+        maxcount_p = maxcount_tmp;
+    end
+    
+    Interval_p(i,:) = [-100,nanmean(interval_tmp(sel))];
+    
+    TimeSeq_p{i} = nanmean(TimeSequence(sel,:),1);
+    
+    %Direction 
+    SeparationPoint=[22.5:22.5:360];
+    
+    SV_sel = SaccadeAngle(sel&StimTrial,:);
+    SV_sel = reshape(SV_sel,1,numel(SV_sel));
+    SV_sel = SV_sel(~isnan(SV_sel));
+
+
+    SaccadeTiming_sel_stim = reshape(SaccadeTime_Stim_p{i},1,numel(SaccadeTime_Stim_p{i}));
+     SaccadeTiming_sel_stim = SaccadeTiming_sel_stim(~isnan( SaccadeTiming_sel_stim ));
+
+    sel_in_interval_stim = SaccadeTiming_sel_stim>=SelectIntervalCompare(1) & SaccadeTiming_sel_stim<=SelectIntervalCompare(2);
+    
+    SV_sel_interval = SV_sel(sel_in_interval_stim);
+
+    SaccadeVectorTuning=PoloarHistGroup( SV_sel_interval,ones(size(SV_sel,2),1),SeparationPoint);
+    
+    SaccadeVector=SaccadeVectorTuning.Center;
+    PropOfAngle_Stim_p{i}=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+    PropOfAngle_Stim_Sem_p{i}=SaccadeVectorTuning.DataSEM;
+    
+    
+    
+    CV_sel = SaccadeAngle(sel&ControlTrial,:);
+    CV_sel = reshape(CV_sel,1,numel(CV_sel));
+    CV_sel = CV_sel(~isnan(CV_sel));
+
+    
+    SaccadeTiming_sel_control = reshape(SaccadeTime_Control_p{i},1,numel(SaccadeTime_Control_p{i}));
+     SaccadeTiming_sel_control = SaccadeTiming_sel_control(~isnan( SaccadeTiming_sel_control ));
+
+    sel_in_interval_control = SaccadeTiming_sel_control>=SelectIntervalCompare(1) & SaccadeTiming_sel_control<=SelectIntervalCompare(2);
+    
+    CV_sel_interval = CV_sel(sel_in_interval_control);
+   
+    
+    SaccadeVectorTuning=PoloarHistGroup(CV_sel_interval,ones(size(CV_sel,2),1),SeparationPoint);
+
+    SaccadeVector=SaccadeVectorTuning.Center;
+    PropOfAngle_Control_p{i}=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+    PropOfAngle_Control_Sem_p{i}=SaccadeVectorTuning.DataSEM;
+    
+    %Raw vector
+    X_Comp_Stim=X_Comp(sel&StimTrial,:);
+    Y_Comp_Stim=Y_Comp(sel&StimTrial,:);
+    
+    X_Comp_Control=X_Comp(sel&ControlTrial,:);
+    Y_Comp_Control=Y_Comp(sel&ControlTrial,:);
+    
+    X_Comp_Control = X_Comp_Control(~isnan(X_Comp_Control));
+    Y_Comp_Control = Y_Comp_Control(~isnan(Y_Comp_Control));
+
+    X_Comp_Stim = X_Comp_Stim(~isnan(X_Comp_Stim));
+    Y_Comp_Stim = Y_Comp_Stim(~isnan(Y_Comp_Stim));
+    
+    %Reorder for the plot according to the y component
+    X_Comp_Control = X_Comp_Control(~isnan(X_Comp_Control));
+    Y_Comp_Control = Y_Comp_Control(~isnan(Y_Comp_Control));
+
+    X_Comp_Stim = X_Comp_Stim(~isnan(X_Comp_Stim));
+    Y_Comp_Stim = Y_Comp_Stim(~isnan(Y_Comp_Stim));
+
+    %Select in interval
+    X_Comp_Stim = X_Comp_Stim(sel_in_interval_stim);
+    Y_Comp_Stim = Y_Comp_Stim(sel_in_interval_stim);
+
+     X_Comp_Control = X_Comp_Control(sel_in_interval_control);
+    Y_Comp_Control = Y_Comp_Control(sel_in_interval_control);
+
+
+
+
+    [val,Index_Control]= sort(Y_Comp_Control,'ascend');
+    [val,Index_Stim]= sort(Y_Comp_Stim,'ascend');
+
+
+    X_Comp_Control_p{i} = X_Comp_Control(Index_Control);
+    Y_Comp_Control_p{i} = Y_Comp_Control(Index_Control);
+
+    X_Comp_Stim_p{i} = X_Comp_Stim(Index_Stim);
+    Y_Comp_Stim_p{i} = Y_Comp_Stim(Index_Stim);
+    
+    %Summary
+    %Proportion of saccades towards left
+
+     PropLeftMRight_Stim_p(i) =  (sum(SV_sel_interval<180)-sum(SV_sel_interval>180))/length(SV_sel_interval);
+     PropLeftMRight_Control_p(i) = (sum(CV_sel_interval<180)-sum(CV_sel_interval>180))/length(CV_sel_interval);
+
+     clSAC = length(SV_sel_interval(SV_sel_interval > 0 & SV_sel_interval< 180));
+     ilSAC = length(SV_sel_interval(SV_sel_interval> 180 & SV_sel_interval < 360));
+
+
+    clSAC_control = length(CV_sel_interval(CV_sel_interval > 0 & CV_sel_interval< 180));
+     ilSAC_control = length(CV_sel_interval(CV_sel_interval> 180 & CV_sel_interval < 360));
+
+
+     [chi_squared, df, p_prop_p(i), is_significant] = chisq_prop_test(clSAC, ilSAC, clSAC_control , ilSAC_control);
+
+
+
+    
+  %  PropLeftMRight_Stim_p1(i) = sum(PropOfAngle_Stim_p{i}(SaccadeVector<180))-sum(PropOfAngle_Stim_p{i}(SaccadeVector>180));
+   % PropLeftMRight_Control_p1(i) = sum(PropOfAngle_Control_p{i}(SaccadeVector<180))-sum(PropOfAngle_Control_p{i}(SaccadeVector>180));
+    
+    %Timing
+    VarTimeStim_p(i) =nanstd(reshape(SaccadeTime_Stim_p{i},1,numel(SaccadeTime_Stim_p{i})));
+    VarTimeControl_p(i) =nanstd(reshape(SaccadeTime_Control_p{i},1,numel(SaccadeTime_Control_p{i})));
+    
+
+    
+    
+       
+    
+end
+
+%Second, vary duration
+maxcount_d = 0;
+for i = 1:length(UniqueDur)
+    sel = stimPower == FixPower & stimDur == UniqueDur(i);
+    
+    %Raster
+    SaccadeTime_Stim_d{i} = SaccadeStartTime(sel & StimTrial,:);
+    SaccadeTime_Control_d{i} = SaccadeStartTime(sel & ControlTrial,:);
+    
+    SaccadeCountStim_d{i}=nansum(SaccadeCount(sel & StimTrial,:));
+    SaccadeCountControl_d{i}=nansum(SaccadeCount(sel & ControlTrial,:));
+    
+     Interval_d(i,:) = [-100,nanmean(interval_tmp(sel))];
+     
+     maxcount_tmp = max(max(SaccadeCountStim_d{i}),max(SaccadeCountControl_d{i}));
+    
+    if maxcount_tmp>maxcount_d
+        maxcount_d = maxcount_tmp;
+    end
+    
+    TimeSeq_d{i} = nanmean(TimeSequence(sel,:),1);
+    
+    %Direction 
+    SeparationPoint=[22.5:22.5:360];
+    
+    SV_sel = SaccadeAngle(sel&StimTrial,:);
+    SV_sel = reshape(SV_sel,1,numel(SV_sel));
+    SV_sel = SV_sel(~isnan(SV_sel));
+
+     SaccadeTiming_sel_stim = reshape(SaccadeTime_Stim_d{i},1,numel(SaccadeTime_Stim_d{i}));
+     SaccadeTiming_sel_stim = SaccadeTiming_sel_stim(~isnan( SaccadeTiming_sel_stim ));
+
+    sel_in_interval_stim = SaccadeTiming_sel_stim>=SelectIntervalCompare(1) & SaccadeTiming_sel_stim<=SelectIntervalCompare(2);
+    
+    SV_sel_interval = SV_sel(sel_in_interval_stim);
+
+   
+
+    SaccadeVectorTuning=PoloarHistGroup(SV_sel_interval,ones(size(SV_sel,2),1),SeparationPoint);
+    
+    SaccadeVector=SaccadeVectorTuning.Center;
+    PropOfAngle_Stim_d{i}=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+    PropOfAngle_Stim_Sem_d{i}=SaccadeVectorTuning.DataSEM;
+    
+    
+    
+    CV_sel = SaccadeAngle(sel&ControlTrial,:);
+    CV_sel = reshape(CV_sel,1,numel(CV_sel));
+    CV_sel = CV_sel(~isnan(CV_sel));
+
+     SaccadeTiming_sel_control = reshape(SaccadeTime_Control_d{i},1,numel(SaccadeTime_Control_d{i}));
+     SaccadeTiming_sel_control = SaccadeTiming_sel_control(~isnan( SaccadeTiming_sel_control ));
+
+    sel_in_interval_control = SaccadeTiming_sel_control>=SelectIntervalCompare(1) & SaccadeTiming_sel_control<=SelectIntervalCompare(2);
+    
+    CV_sel_interval = CV_sel(sel_in_interval_control);
+
+    
+    SaccadeVectorTuning=PoloarHistGroup(CV_sel_interval ,ones(size(CV_sel,2),1),SeparationPoint);
+
+    SaccadeVector=SaccadeVectorTuning.Center;
+    PropOfAngle_Control_d{i}=SaccadeVectorTuning.DataNum/sum(SaccadeVectorTuning.DataNum)*100;%Change into proportion of saccades
+    PropOfAngle_Control_Sem_d{i}=SaccadeVectorTuning.DataSEM;
+    
+    %Raw vector
+    X_Comp_Stim=X_Comp(sel&StimTrial,:);
+    Y_Comp_Stim=Y_Comp(sel&StimTrial,:);
+    
+    X_Comp_Control=X_Comp(sel&ControlTrial,:);
+    Y_Comp_Control=Y_Comp(sel&ControlTrial,:);
+    
+    X_Comp_Control = X_Comp_Control(~isnan(X_Comp_Control));
+    Y_Comp_Control = Y_Comp_Control(~isnan(Y_Comp_Control));
+
+    X_Comp_Stim = X_Comp_Stim(~isnan(X_Comp_Stim));
+    Y_Comp_Stim = Y_Comp_Stim(~isnan(Y_Comp_Stim));
+    
+    %Reorder for the plot according to the y component
+    X_Comp_Control = X_Comp_Control(~isnan(X_Comp_Control));
+    Y_Comp_Control = Y_Comp_Control(~isnan(Y_Comp_Control));
+
+    X_Comp_Stim = X_Comp_Stim(~isnan(X_Comp_Stim));
+    Y_Comp_Stim = Y_Comp_Stim(~isnan(Y_Comp_Stim));
+
+     %Select in interval
+    X_Comp_Stim = X_Comp_Stim(sel_in_interval_stim);
+    Y_Comp_Stim = Y_Comp_Stim(sel_in_interval_stim);
+
+     X_Comp_Control = X_Comp_Control(sel_in_interval_control);
+    Y_Comp_Control = Y_Comp_Control(sel_in_interval_control);
+
+
+
+    [val,Index_Control]= sort(Y_Comp_Control,'ascend');
+    [val,Index_Stim]= sort(Y_Comp_Stim,'ascend');
+
+
+    X_Comp_Control_d{i} = X_Comp_Control(Index_Control);
+    Y_Comp_Control_d{i} = Y_Comp_Control(Index_Control);
+
+    X_Comp_Stim_d{i} = X_Comp_Stim(Index_Stim);
+    Y_Comp_Stim_d{i} = Y_Comp_Stim(Index_Stim);
+
+     %Summary
+    %Proportion of saccades towards left
+   % PropLeftMRight_Stim_d(i) = sum(PropOfAngle_Stim_d{i}(SaccadeVector<180))-sum(PropOfAngle_Stim_d{i}(SaccadeVector>180));
+   % PropLeftMRight_Control_d(i) = sum(PropOfAngle_Control_d{i}(SaccadeVector<180))-sum(PropOfAngle_Control_d{i}(SaccadeVector>180));
+
+    PropLeftMRight_Stim_d(i) =  (sum(SV_sel_interval<180)-sum(SV_sel_interval>180))/length(SV_sel_interval);
+     PropLeftMRight_Control_d(i) = (sum(CV_sel_interval<180)-sum(CV_sel_interval>180))/length(CV_sel_interval);
+
+      clSAC = length(SV_sel_interval(SV_sel_interval > 0 & SV_sel_interval< 180));
+     ilSAC = length(SV_sel_interval(SV_sel_interval> 180 & SV_sel_interval < 360));
+
+
+    clSAC_control = length(CV_sel_interval(CV_sel_interval > 0 & CV_sel_interval< 180));
+     ilSAC_control = length(CV_sel_interval(CV_sel_interval> 180 & CV_sel_interval < 360));
+
+
+     [chi_squared, df, p_prop_d(i), is_significant] = chisq_prop_test(clSAC, ilSAC, clSAC_control , ilSAC_control);
+    
+    %Timing
+    
+    
+     %Timing
+    VarTimeStim_d(i) =nanstd(reshape(SaccadeTime_Stim_d{i},1,numel(SaccadeTime_Stim_d{i})));
+    VarTimeControl_d(i) =nanstd(reshape(SaccadeTime_Control_d{i},1,numel(SaccadeTime_Control_d{i})));
+    
+    
+end
+
+
+%Select to export
+%PropLeftMRight_Stim_p(
+
+rank_p  = sort(UniquePower,'ascend');
+mid = ceil(length(rank_p)/2);
+if isnan(PropLeftMRight_Stim_p(mid))
+    mid=mid+1;
+end
+low = 1;
+high =length(rank_p);
+
+if ismember(FileName,{'Robin071923VIDEOVIEW1.rst'})
+    Export_Power =rank_p(end-2:end);
+elseif ismember(FileName,{'Robin072423VIDEOVIEW1.rst'})
+    mid=mid+1;
+
+    Export_Power = rank_p([low,mid,high]);
+else
+    Export_Power = rank_p([low,mid,high]);
+
+end
+
+Export_Prop_Sac_p_Stim = [PropLeftMRight_Stim_p(UniquePower==Export_Power(1)),PropLeftMRight_Stim_p(UniquePower==Export_Power(2)),PropLeftMRight_Stim_p(UniquePower==Export_Power(3))];
+Export_Prop_Sac_p_Control = [PropLeftMRight_Control_p(UniquePower==Export_Power(1)),PropLeftMRight_Control_p(UniquePower==Export_Power(2)),PropLeftMRight_Control_p(UniquePower==Export_Power(3))];
+Export_p_p=[p_prop_p(UniquePower==Export_Power(1)),p_prop_p(UniquePower==Export_Power(2)),p_prop_p(UniquePower==Export_Power(3))];
+Export_Power_reg = [0.5,1.5,4.5];
+
+%Export
+Export_Dur = [10,50,100,200];
+Export_Prop_Sac_d_Stim = NaN*ones(1,length(Export_Dur));
+Export_Prop_Sac_d_Control = NaN*ones(1,length(Export_Dur));
+Export_p_d=NaN*ones(1,length(Export_Dur));
+
+for dd = 1:length(Export_Dur)
+    sel_d = UniqueDur == Export_Dur(dd);
+    if sum(sel_d) >0
+        Export_Prop_Sac_d_Stim(dd) = PropLeftMRight_Stim_d(sel_d);
+        Export_Prop_Sac_d_Control(dd) = PropLeftMRight_Control_d(sel_d);
+        Export_p_d(dd) = p_prop_d(sel_d);
+
+    end
+
+   
+
+end
+
+
+
+
+NumPower = length(UniquePower);
+NumDur = length(UniqueDur);
+
+
+%%Plotting
+if ShowFigureFlag
+    %%Fig 1: saccade raster in different power
+    FigureStartNum=30;
+    FigureIndex=1;
+    figtitlestr{FigureIndex}='SaccadeRasterDifferentPower';
+    fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1500,900],'Name',figtitlestr{FigureIndex});
+    for i = 1: NumPower
+        %Raster
+        subplot(2,NumPower,i);
+        StartLoc = 1;
+        LineWidth = 3;
+        Barlength = 1;
+
+       
+        AverageRegion = [0,nanmean(MarkerTime)];
+        area(AverageRegion,[size(MarkerTime,1)+5,size(MarkerTime,1)+5],...
+            'FaceColor','k','FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+
+        hold on
+
+        %Raster For Stim
+        SpikeRaterPlot(SaccadeTime_Stim_p{i},StartLoc,Barlength,'r',LineWidth);
+
+        StartLoc = size(SaccadeTime_Stim_p{i} ,1)+5;
+        %Raster For Control
+
+        SpikeRaterPlot(SaccadeTime_Control_p{i},StartLoc,Barlength,'k',LineWidth);
+        
+        if sum(isnan(Interval_p(i,:)))>0
+            xlim([0,100]);
+        else
+            xlim(Interval_p(i,:));
+
+        end
+        
+      
+
+
+        set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+        yticks([]);
+        title(sprintf("Power : %1.2f mW",UniquePower(i)));
+        box off
+        
+        %Saccade Count
+        subplot(2,NumPower,NumPower+i);
+        
+        maxy = maxcount_p+2;
+        AverageRegion = [0,nanmean(MarkerTime)];
+        area(AverageRegion,[maxy,maxy],...
+        'FaceColor','k','FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+
+        hold on
+
+
+        plot(TimeSeq_p{i},SaccadeCountStim_p{i},'-r','LineWidth',3)
+        hold on
+        plot(TimeSeq_p{i},SaccadeCountControl_p{i},'-k','LineWidth',3)
+
+        box off;
+        if i == floor(NumPower/2)
+            xlabel('Time from Opto-stim On');
+        end
+            ylabel('Number of saccades');
+        if i == 1
+            legend({'Stim','Sham'});
+        end
+        set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+      
+    
+    
+    end
+    
+    
+    %%Fig 2: saccade raster in different duration
+    FigureStartNum=FigureStartNum+1;
+    FigureIndex= FigureIndex +1;
+    
+    figtitlestr{FigureIndex}='SaccadeRasterDifferentDuraion';
+    fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1500,900],'Name',figtitlestr{FigureIndex});
+    for i = 1: NumDur
+        subplot(2,NumDur,i);
+        StartLoc = 1;
+        LineWidth = 3;
+        Barlength = 1;
+
+       
+        AverageRegion = [0,nanmean(UniqueDur(i))];
+        area(AverageRegion,[size(MarkerTime,1)+5,size(MarkerTime,1)+5],...
+            'FaceColor','k','FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+
+        hold on
+
+        %Raster For Stim
+        SpikeRaterPlot(SaccadeTime_Stim_d{i},StartLoc,Barlength,'r',LineWidth);
+
+        StartLoc = size(SaccadeTime_Stim_d{i} ,1)+5;
+        %Raster For Control
+
+        SpikeRaterPlot(SaccadeTime_Control_d{i},StartLoc,Barlength,'k',LineWidth);
+        xlim(Interval_d(i,:));
+
+
+        set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+        yticks([]);
+        title(sprintf("Dur: %dms,(%1.2f mW)",UniqueDur(i),FixPower));
+        box off
+        
+        %Saccade Count
+        subplot(2,NumDur,NumDur+i);
+        
+        maxy = maxcount_d+2;
+        AverageRegion = [0,UniqueDur(i)];
+        area(AverageRegion,[maxy,maxy],...
+        'FaceColor','k','FaceAlpha',.1,'EdgeAlpha',.1,'HandleVisibility','off');
+
+        hold on
+
+
+        plot(TimeSeq_d{i},SaccadeCountStim_d{i},'-r','LineWidth',3)
+        hold on
+        plot(TimeSeq_d{i},SaccadeCountControl_d{i},'-k','LineWidth',3)
+        
+        xlim(Interval_d(i,:));
+       
+
+        box off;
+        if i == floor(NumDur/2)
+            xlabel('Time from Opto-stim On');
+        end
+            ylabel('Number of saccades');
+        if i == 1
+            legend({'Stim','Sham'});
+        end
+        set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+      
+    
+    
+    end
+    
+    
+    %%  Fig3: saccade direction in different power
+    FigureStartNum=FigureStartNum+1;
+    FigureIndex= FigureIndex +1;
+    
+    figtitlestr{FigureIndex}='SaccadeDirectionDifferentPower';
+    fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1500,900],'Name',figtitlestr{FigureIndex});
+    
+    for i = 1: NumPower
+        %Polar plot for saccade direction 
+        subplot(3,NumPower,i);
+        polarplot([SaccadeVector/180*pi SaccadeVector(1)/180*pi],[PropOfAngle_Control_p{i} PropOfAngle_Control_p{i}(1)],...
+    '-k','LineWidth',3);
+        hold on
+        polarplot([SaccadeVector/180*pi SaccadeVector(1)/180*pi],[PropOfAngle_Stim_p{i} PropOfAngle_Stim_p{i}(1)],...
+    '-r','LineWidth',3);
+ title(sprintf("Power : %1.2f mW",UniquePower(i)));
+set(gca,'ThetaDir' , 'counterclockwise');
+set(gca,'ThetaZeroLocation','top')
+set(gca,'FontSize',20,'FontWeight','Bold','LineWidth',3);
+set(gca,'RLim',[0,100]);
+
+thetaticks([0:45:359]);
+%thetaticklabels([0:45:359]);
+thetaticklabels([]);
+rticks([0:50:100]);
+rticklabels([]);
+
+%Raw vector
+    subplot(3,NumPower,NumPower+i);
+    quiver(X_Comp_Stim_p{i},Y_Comp_Stim_p{i},'autoscale','off','color','r','LineWidth',3);
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    axis off
+    
+     subplot(3,NumPower,NumPower*2+i);
+    quiver(X_Comp_Control_p{i},Y_Comp_Control_p{i},'autoscale','off','color','k','LineWidth',3);
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    axis off
+
+
+        
+        
+    end
+    
+ %%  Fig4: saccade direction in different duration
+    FigureStartNum=FigureStartNum+1;
+    FigureIndex= FigureIndex +1;
+    
+    figtitlestr{FigureIndex}='SaccadeDirectionDifferentDuration';
+    fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1500,900],'Name',figtitlestr{FigureIndex});
+    
+    for i = 1: NumDur
+        %Polar plot for saccade direction 
+        subplot(3,NumDur,i);
+        polarplot([SaccadeVector/180*pi SaccadeVector(1)/180*pi],[PropOfAngle_Control_d{i} PropOfAngle_Control_d{i}(1)],...
+    '-k','LineWidth',3);
+        hold on
+        polarplot([SaccadeVector/180*pi SaccadeVector(1)/180*pi],[PropOfAngle_Stim_d{i} PropOfAngle_Stim_d{i}(1)],...
+    '-r','LineWidth',3);
+    title(sprintf("Dur: %dms,(%1.2f mW)",UniqueDur(i),FixPower));
+    set(gca,'ThetaDir' , 'counterclockwise');
+    set(gca,'ThetaZeroLocation','top')
+    set(gca,'FontSize',20,'FontWeight','Bold','LineWidth',3);
+    set(gca,'RLim',[0,100]);
+
+    thetaticks([0:45:359]);
+    %thetaticklabels([0:45:359]);
+    thetaticklabels([]);
+    rticks([0:50:100]);
+    rticklabels([]);
+    
+    
+    %Raw vector
+    subplot(3,NumDur,NumDur+i);
+    quiver(X_Comp_Stim_d{i},Y_Comp_Stim_d{i},'autoscale','off','color','r','LineWidth',3);
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    axis off
+    
+     subplot(3,NumDur,NumDur*2+i);
+    quiver(X_Comp_Control_d{i},Y_Comp_Control_d{i},'autoscale','off','color','k','LineWidth',3);
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    axis off
+    
+    
+
+        
+        
+    end   
+    
+  %%  Fig5: Summary
+    FigureStartNum=FigureStartNum+1;
+    FigureIndex= FigureIndex +1;
+    
+    figtitlestr{FigureIndex}='Summary';
+    fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1200,600],'Name',figtitlestr{FigureIndex});  
+    subplot(2,2,1)
+    plot(UniquePower,PropLeftMRight_Stim_p,'-or','MarkerSize',20,'Color','r','LineWidth',3);
+  %  hold on
+  %  plot(UniquePower,PropLeftMRight_Control_p,'-ok','MarkerSize',20,'Color','k','LineWidth',3);
+    xlabel('Output Power(mW)');
+    ylabel('(PrpRight - PropLeft)*100');
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    
+    subplot(2,2,2)
+    plot(UniqueDur,PropLeftMRight_Stim_d,'-or','MarkerSize',20,'Color','r','LineWidth',3);
+   % hold on
+   % plot(UniqueDur,PropLeftMRight_Control_d,'-ok','MarkerSize',20,'Color','k','LineWidth',3);
+    xlabel('StimDur(ms)');
+    ylabel('(PrpRight - PropLeft)*100');
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    
+    subplot(2,2,3)
+    %Timing
+    plot(UniquePower,VarTimeStim_p,'-or','MarkerSize',20,'Color','r','LineWidth',3);
+   % hold on
+   % plot(UniquePower,VarTimeControl_p,'-ok','MarkerSize',20,'Color','k','LineWidth',3);
+    xlabel('Output Power(mW)');
+    ylabel('StdOfSacTime(Control - Stim)');
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    
+    subplot(2,2,4)
+    %Timing
+    plot(UniqueDur,VarTimeStim_d,'-or','MarkerSize',20,'Color','r','LineWidth',3);
+    % hold on
+    %plot(UniqueDur,VarTimeControl_d,'-ok','MarkerSize',20,'Color','k','LineWidth',3);
+    xlabel('Stim Duration(ms)');
+    ylabel('StdOfSacTime(Control - Stim)');
+    set(gca,'LineWidth',3,'FontSize',20,'FontWeight','Bold');
+    box off
+    
+   
+    
+    
+   
+
+    
+end
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Output to
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%files%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Setup output directory
+Workingdirectory=pwd;
+
+
+%Set up output path according to the system
+OperationSystem = computer;%Get the operation system information
+
+if strcmp(OperationSystem(1:3),"PCW")  
+    %PC
+     MarkerFolder='DataHub';
+elseif strcmp(OperationSystem(1:3),"MAC")  
+    %Mac
+     MarkerFolder='DataAnalysis';
+ end
+Flag=strfind(Workingdirectory,MarkerFolder);
+BasicDirectory=Workingdirectory(1:Flag+length(MarkerFolder));
+
+%%%%%%%%%%%Export data%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%OutputFolerName='ForagingTask';
+OutPath=strcat(BasicDirectory,'Results',BasicDirectory(end));%,OutputFolerName);
+if ~exist(OutPath)
+    mkdir(OutPath)
+end
+cd(OutPath);
+FileName=Data.FileName;
+FileName=FileName(1:end-4);
+
+
+%Get File Information
+num = regexp(FileName, '\d+', 'match');
+RecordDateOriginal=cell2mat(num(1));
+
+NeuronNum=cell2mat(num(2));
+ChannelNum=SpikeChannel;
+
+
+%To get the monkey name
+RemainFiles=erase(FileName,RecordDateOriginal);
+Delimiter=find(isstrprop(RemainFiles,'upper')==1);
+MonkeyName=RemainFiles(Delimiter(1):Delimiter(2)-1);
+
+
+%Output file name
+OutputFileName=sprintf('%s_%s_N%s_C%s.mat',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+OutputFigureName=sprintf('%s_%s_N%s_C%s',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+
+%Store figures in common folders
+%{
+ProtocolMarker = 'MemorySac';
+FigurePath=strcat(BasicDirectory,'Figures',BasicDirectory(end),ProtocolMarker,BasicDirectory(end));%,OutputFolerName);
+if ~exist(FigurePath)
+    mkdir(FigurePath)
+end
+
+if ShowFigureFlag & OutputFlag
+    %for i=1:length(fig)
+    for i=1:1
+        cd(FigurePath);
+        OutputFigureNameFig=[];
+        titlestr=figtitlestr{i};
+        FolderName=titlestr;
+         if ~exist(FolderName,'dir')
+          mkdir(FolderName);
+         end
+          cd(FolderName);
+    
+        OutputFigureNameFig=strcat(OutputFigureName,'.jpg');
+        saveas(fig{i},OutputFigureNameFig);
+        
+        
+    end
+        
+    
+    disp('Figures have been exported to the common folder');
+    
+end
+
+%}
+
+%
+
+
+ExistFlag=0;
+%Load the old file if exist
+if exist(OutputFileName)
+
+    load(OutputFileName);
+    %Load OutputData into the memory
+    if isfield(OutputData,'FreeViewVaryDurAmpBehavior')
+    ExistFlag=1;
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%OutputData For current analysis
+OutputData_New=[];
+
+OutputData_New.FreeViewVaryDurAmpBehavior.TrialType='GoodTrials';
+%%%%%%%%%Save overall scene response characteristics%%%%%%%%%%%%%%%%%%%%%%%
+%Organize the data
+NameStr={'Export_Power','Export_Prop_Sac_p_Stim','Export_Prop_Sac_p_Control',...
+    'Export_p_p','Export_Dur','Export_Prop_Sac_d_Stim','Export_Prop_Sac_d_Control','Export_p_d'
+};
+
+DataLib={Export_Power,Export_Prop_Sac_p_Stim,Export_Prop_Sac_p_Control,...
+   Export_p_p,Export_Dur,Export_Prop_Sac_d_Stim,Export_Prop_Sac_d_Control,Export_p_d
+};
+
+
+DataStamp=containers.Map(NameStr,DataLib);
+
+
+
+
+
+OutputData_New.FreeViewVaryDurAmpBehavior.Task=TaskType;
+OutputData_New.FreeViewVaryDurAmpBehavior.TaskCode=TaskCode;
+OutputData_New.FreeViewVaryDurAmpBehavior.DataStamp=DataStamp;
+
+%{
+%Store figures
+if ShowFigureFlag
+   
+    %OutputData_New.SceneTuning.Figures={fig99,fig100,fig101,fig102};
+    %Output figures in a folder;
+    FolderName=OutputFigureName;
+    if ~exist(FolderName,'dir')
+        mkdir(FolderName);
+    end
+    cd(FolderName);
+    
+    TotalFigure=length(fig);
+    
+    for j=1:TotalFigure
+        OutputFigureName=strcat(OutputFigureName,figtitlestr{j},'.jpg');
+        if ~isempty(fig{j})
+        saveas(fig{j},OutputFigureName);
+        end
+        
+    end
+
+    disp('Figures have been exported to the neuron folder');
+
+end
+%
+if ExistFlag
+%Compare the old one with the new one
+Task_Old=OutputData.FreeViewVaryDurAmpBehavior.TaskCode;
+
+     if Task_Old~=TaskCode
+        %Not the same task, add the new dataset into the old one
+        OutputData.FreeViewVaryDurAmpBehavior(numel(OutputData.FreeViewVaryDurAmpBehavior)+1)=OutputData_New.FreeViewVaryDurAmpBehavior;
+     else
+         %If the same task,the same protocol,replace the old one with the new one
+         
+         OutputData.FreeViewVaryDurAmpBehavior=OutputData_New.FreeViewVaryDurAmpBehavior;
+         
+    
+    
+     end
+else
+    %Output the current file
+   OutputData.FreeViewVaryDurAmpBehavior=OutputData_New.FreeViewVaryDurAmpBehavior; 
+end
+
+
+
+if OutputFlag
+    cd(OutPath);
+    save(OutputFileName,'OutputData');
+    disp('Data Exported');
+else
+    disp('No data export');
+end  
+
+
+
+
+end %End of loop among spike channel
+
+
+
+
+end
+function organized=ReorganizeEye(data);
+organized=[];
+for i=1:length(data)
+    data_curr=data{i};
+    maxnumel=max(cellfun(@numel,data_curr));
+    organized{i}=cell2mat(cellfun(@(x) [x,NaN*ones(1,maxnumel-length(x))],data_curr,'uniform',0));
+    
+end
+
+ maxnumel=max(cellfun(@(x) size(x,2),organized));
+  organized=cell2mat(cellfun(@(x) [x,NaN*ones(size(x,1),maxnumel-size(x,2))],organized,'uniform',0)');
+
+end
+
+function ObjectIndex=ReproduceFromEvent(event,code)
+for i=1:size(event,1)
+    
+    ObjectIndex{i}=event(i,ismember(event(i,:),code));
+    
+  
+    
+end
+numeach=cellfun(@numel,ObjectIndex);
+nummax=max(numeach);
+if nummax==1
+    ObjectIndex=cell2mat(ObjectIndex);
+
+    
+end
+
+
+end
