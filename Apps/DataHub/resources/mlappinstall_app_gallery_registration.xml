@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolset id="user_apps_toolset" template="false">
+   <tool app_file_path="./" handler_class="com.mathworks.appmanagement.desktop.ToolboxToolSetExtensionHandler" id="9f20a6b5-538e-45eb-b60c-c21c37c33efd" label="DataHub" toolset_id="user_apps_toolset">
+      <callback>matlab.apputil.run('DataHubAPP')</callback>
+      <summary>Data hub for data analysis in OH Lab</summary>
+      <parent_tool id="my_apps" toolset_id="apps_toolset"/>
+   </tool>
+</toolset>

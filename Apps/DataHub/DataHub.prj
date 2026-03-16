@@ -1,0 +1,153 @@
+<deployment-project plugin="plugin.apptool" plugin-version="1.0">
+  <configuration build-checksum="3990561039" file="/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/DataHub_YXF/Apps/DataHub/DataHub.prj" location="/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/DataHub_YXF/Apps/DataHub" name="DataHub" target="target.mlapps" target-name="Package App">
+    <param.appname>DataHub</param.appname>
+    <param.authnamewatermark>Xuefei Yu</param.authnamewatermark>
+    <param.email />
+    <param.company />
+    <param.icon>${PROJECT_ROOT}/DataHub_resources/icon_24.png</param.icon>
+    <param.icons>
+      <file>${PROJECT_ROOT}/DataHub_resources/icon_48.png</file>
+      <file>${PROJECT_ROOT}/DataHub_resources/icon_24.png</file>
+      <file>${PROJECT_ROOT}/DataHub_resources/icon_16.png</file>
+    </param.icons>
+    <param.summary>Data hub for data analysis in OH Lab</param.summary>
+    <param.description />
+    <param.screenshot>/private/var/folders/9x/3rhg0g1s0knfs_q4yz4tg7dn7mg21w/T/tp0aa08814_2ef9_405b_a688_4ed643181d0f.png</param.screenshot>
+    <param.version>1.8</param.version>
+    <param.products.name />
+    <param.products.id />
+    <param.products.version />
+    <param.platforms>
+      <item>maci64</item>
+    </param.platforms>
+    <param.output>${PROJECT_ROOT}</param.output>
+    <param.guid>8d472971-ba83-4b9c-8f81-35f39202525d</param.guid>
+    <unset>
+      <param.email />
+      <param.company />
+      <param.description />
+      <param.products.name />
+      <param.products.id />
+      <param.products.version />
+      <param.output />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}/DataHub.mlapp</file>
+    </fileset.main>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BatchAnalysis/ForagingTask/Batch_FractalTuning_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BatchAnalysis/ForagingTask/Batch_Saccade_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BatchAnalysis/ForagingTask/Batch_SceneFractalCorrelation_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BatchAnalysis/ForagingTask/NeuronClassification_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BatchAnalysis/ForagingTask/SceneTuning_Batch_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BonusTrialConditionCheck.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/BonusTrialConditionRescue.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ChunkData.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ExploreTask/ExploreBehaviorAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ExploreTask/ExploreSaccadeAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ExploreTask/RejectReactionAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ExploreTask/VideoReConstructionForExplore.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/EyeMovementAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/BonusTrialAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/EventSegTool.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/EventSegregationAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/ForagingTask_LocationSelectivity.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/ForagingTask_PSTH.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/FractalTuning.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/ITI_RandomSeqFixSeqCompare.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/MotivationAndReactionTime_Analysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/PerformanceAnalysis_Foraging.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/RandomFixOrderSceneSep.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/RandomSeqFixSeqCompare.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/SaccadeAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/ForagingTask/TargetSaccadeAnalysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/FractalTypeIdentifyBonus.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/LocToAngle.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/Neuron_Basic_Analysis.m</file>
+      <file>${PROJECT_ROOT}/AnalysisProtocol/SelectSaccade.m</file>
+      <file>${PROJECT_ROOT}/BatchFileLoading/CheckBatchFile.m</file>
+      <file>${PROJECT_ROOT}/BlockInformRescue.m</file>
+      <file>${PROJECT_ROOT}/ConfidenceInterval.m</file>
+      <file>${PROJECT_ROOT}/DataAnalysisListSwitchyard.m</file>
+      <file>${PROJECT_ROOT}/DataAnalysisProtocolSwitchyard.m</file>
+      <file>${PROJECT_ROOT}/ECode.m</file>
+      <file>${PROJECT_ROOT}/ECode_Old.m</file>
+      <file>${PROJECT_ROOT}/FindOutTime.m</file>
+      <file>${PROJECT_ROOT}/LoadAndExportData.m</file>
+      <file>${PROJECT_ROOT}/LoadWaveform.m</file>
+      <file>${PROJECT_ROOT}/PCAClusteringPlot.m</file>
+      <file>${PROJECT_ROOT}/PackData.m</file>
+      <file>${PROJECT_ROOT}/PlotWaveForm.m</file>
+      <file>${PROJECT_ROOT}/ReOrganizeData.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/AlignEyeData.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/AlignEyeDataToSaccades.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/CalculateSpikeFiringRate.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/Cluster Fix Package/ClusterFix.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/FindFixLoc.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/FindNumOfRepetition.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/FindOutLatency.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/FindRejectLatency.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/GaussSmooth.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/PoloarHistGroup.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/PrepareFigure.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/ReShapeNaN.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/RetriveDataLib.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SelectEyeInterval.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SelectMatrixData.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SelectPSTHInterval.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SelectPeriod.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SelectSpikeTimeInterval.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SortDataAccordingToGroup.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SpikeAlignTool.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/SpikeRaterPlot.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/TransformToOutcome.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/anova1_group.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/countmember/countmember.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/fillinNaNs.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/polarwitherrorbar.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/raacampbell-shadedErrorBar-f22c5a1/shadedErrorBar.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/subplot_tight/subplot_tight.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/ttest2_group.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/vectorsumAngle.m</file>
+      <file>${PROJECT_ROOT}/ToolBox/venn.m</file>
+    </fileset.depfun>
+    <fileset.resources />
+    <fileset.package />
+    <build-deliverables>
+      <file location="/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/DataHub_YXF/Apps" name="DataHub" optional="false">/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/DataHub_YXF/Apps/DataHub</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/Applications/MATLAB_R2025b.app</root>
+      <toolboxes>
+        <toolbox name="matlabcoder" />
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>true</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>26.3</osver>
+      <os32>true</os32>
+      <os64>false</os64>
+      <arch>maci64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>

@@ -1,0 +1,408 @@
+% Event Code for Booth A; Maintained by Xuefei Yu 08052019
+%Last updated; by YXF 01272021
+
+
+%TaskCode
+BATCH                 =-999;
+EYE_CAL_TASK          =300;
+FIX_WITH_DISTRACT     =301;
+SCC_TASK			  =302;
+ONEDR_TASK            = 361;
+
+OBJ_DIR_SAC_TASK      =303;
+FRAC_PAS_VIEW_TASK    =304;
+FRAC_FREE_VIEW_TASK   =305;
+FORAGING_TASK         =306;
+RFMAPPER_OBJ_TASK     =307;
+FORAGING_TASK_SEQ     =308;
+FORAGING_TASK_LOCSEQ          =309;
+FORAGING_EXPLORE_TASK         =310;
+FORAGING_EXPLORE_TASK_LONG    =311;
+FORAGING_TASK_LONG            =312;
+FORAGING_EXPLORE_TASK_SHORT   =313;
+FLEXIBLE_VALUE_TASK           =314;
+
+SCENE_FREE_VIEW_TASK          =315;
+SCENE_PAS_VIEW_TASK           =316;
+OBJ_MEM_SAC_TASK              =317;
+OBJ_GAZE_TASK                 =318;
+EXPLORE_TASK_VARYEYEPOS       =319;
+OBJSEQ_FORAGING_TASK          =320;
+SCENEOBJ_NEW_LEARNING_TASK    =321;
+FLEXOBJ_MEM_SAC_TASK          =322;
+FORAG_CP_TASK                 =323;
+SCENEOBJ_PASSIVE_VIEW_TASK    =324;
+RPSCENESEQ_TASK               =325;
+OBJMEORY_TASK                 =326;
+FORAGING_EXPLORE_TASK_ITL     =329;
+
+FIXSEQSCENE_PASSIVE_VIEW_TASK =327;
+FIXSEQSCENE_FREE_VIEW_TASK    =328;
+
+OBJMATCHSAMPLE_TASK           =332;
+FLEXMATCHSAMPLE_TASK          =333;
+SCENEOBJPV_ORI_TASK           =334;
+SCENEFREEFORAGING_TASK        =335;
+PATHSEARCHING_TASK            =336;
+SEQUENCE_MEMORY_TASK            =337;
+OBJ_PROBABILITY_TASK        =338;
+OBJ_LOCATIONVALUE_TASK            =339;
+
+SCENE_SEQLEARN_TASK = 350;
+LOCSEQ_FRACTAL_TASK = 351;
+FRACTAL_PATH_TASK = 352;
+SCENE_PATH_TASK = 353;
+FRAC_RWDSEQ_TASK = 354;
+
+FRAC_STIM_TASK = 357;
+
+
+MEMSAC_TASK = 362;
+VIDEO_FREEVIEW_TASK = 364;
+FIXSTIM_TASK = 365;
+ENDFIXSTIM_TASK = 366;
+SACSTIM_TASK = 367;
+ENDSACSTIM_TASK = 368;
+%ENDSACSTIM_TASK = 368;
+
+DSSTIM_TASK = 372;
+LUMSTIM_TASK = 373;
+VARYANGLESTIM_TASK = 374;
+
+
+
+
+
+
+% Basic Event Codes;
+ ENABLECD    =0;
+ EYE_OUT_OF_TGT  =1;
+ SHOWFIXCD   =2;
+ FIXSTARTCD  =3;
+ FLASH_CUE	 =4;
+ FIXOFF	     =5;
+ TGTCD       =6;
+ SAC_OCCURRED=7;
+ MOVED       =8;
+ PRE_RWDCD   =9;
+ RWDCD       =10;
+ RWDOFFCD    =11;
+ CORRECTCD   =12;
+ BADCHOICECD=13;
+ NOFIX      =14;
+ FAILED_SAC  =15;
+ AWAY_LOOK_TRL=16;
+ ERR_BEEP      =17;
+ NULL_CD       =18;
+ STIM_CD       =19;
+ END_OF_TRIAL_ECODE_FOR_RL_SDF =20;
+ ADVEYE_IN      =21;
+ 
+ BROKEFIX        =22;
+ FAILED_GAZ      =23;
+ OBJON           =24;
+ OBJOFF          =25;
+ TGTOFF          =26;
+ 
+ 
+ EXTRAFIXSTARTCD    =27;
+ EXTRAFIXOFF       =28;
+ 
+ 
+ BADREJFIXON      =29;
+ BADREJFIXSTART            =30;
+ ADVEYE_FIX                =31;
+ 
+
+ADVEYE_STAY =       192  ;
+AUTO_SHOWOBJ =       193 ;
+CUEON      =        194;
+CUEOFF     =         195 ;
+
+ 
+
+ SAC_IN_RF            =32;
+ SAC_OUT_RF           =33;
+ SCENE_ON             =34;
+ SCENE_OFF            =35;
+ GOODCHOICECD         =36;
+ 
+ FIRST_SCENE          =37;
+ SECOND_SCENE         =38;
+ THIRD_SCENE          =39;
+ FOURTH_SCENE         =40;
+ FIFTH_SCENE          =41;
+ SIXTH_SCENE          =42;
+ SEVENTH_SCENE        =43;
+ EIGHTH_SCENE         =44;
+ NINTH_SCENE		  =45;
+ TENTH_SCENE		  =46;
+ ELEVENTH_SCENE		  =47;
+ TWELVETH_SCENE		  =48;
+ 
+ EYEOUTSCREEN		=49;
+ 
+ 
+ FORAGESCENE_START=1000; %this is not a event code, only to store the task related const
+ FORAGEFRACTAL_START=150; %this is not a event code, only to store the task related const
+ 
+ 
+ FIRSTGOOD			=51;
+ SECONDGOOD			=53;
+ THIRDGOOD			=55;
+ FOURTHGOOD			=57;
+ FIFTHGOOD			=59;
+ SIXTHGOOD			=61;
+ SEVENTHGOOD		=63;
+ EIGHTHGOOD			=65;
+ NINTHGOOD			=67;
+ TENTHGOOD			=69;
+ ELEVENTHGOOD        =71;
+ TWELVETHGOOD		=73;
+ 
+
+ FIRSTBAD			=50;
+ SECONDBAD			=52;
+ THIRDBAD			=54;
+ FOURTHBAD			=56;
+ FIFTHBAD			=58;
+ SIXTHBAD		    =60;
+ SEVENTHBAD			=62;
+EIGHTHBAD		    =64;
+NINTHBAD			=66;
+TENTHBAD			=68;
+ELEVENTHBAD         =70;
+TWELVETHBAD		    =72;
+ FIXFRA		        =75;
+ FIXFRB		        =76;
+ EXTRAFP		        =77;
+ FIXFRBONUS         =78;
+ FIXFRR         =79;
+ 
+ %{
+ FIRST_FXOFF          =43;
+ SECOND_FXOFF         =44;
+ THIRD_FXOFF          =45;
+ FOURTH_FXOFF         =46;
+ FIFTH_FXOFF          =47;
+ SIXTH_FXOFF          =48;
+ SEVENTH_FXOFF        =51;
+ EIGHTH_FXOFF         =52;
+ FIRST_SAC            =53;
+ SECOND_SAC           =54;
+ THIRD_SAC            =55;
+ FOURTH_SAC           =56;
+ FIFTH_SAC            =55;
+ SIXTH_SAC            =57;
+ %}
+ LEFTHEMI             =80;
+ RIGHTHEMI            =81;
+ CENTERTGT            =82;
+ UPHEMI               =83;
+ DOWNHEMI             =84;
+ 
+ LEFTUPHEMI           =102;
+ RIGHTUPHEMI           =103;
+ LEFTDOWNHEMI           =104;
+ RIGHTDOWNHEMI          =105;
+ 
+ 
+ 
+ 
+ FORCEDTRL            =85;
+ CHOICETRL            =86;
+ 
+ BONUSTRIALSTART     =87;
+ BONUSTRIALEND       =88;
+% object Ecodes are 801-816 for 1-16
+ GOODOBJ             =90;
+ BADOBJ              =91;
+ SOUNDOBJ            =92;
+ PUNISHOBJ           =93;
+ NULLOBJ             =94;
+ NOVOBJ              =95;
+ FAMOBJ              =96;
+ GOODOBJWSAC         =97;
+ BADOBJWSAC          =98;
+ 
+ FIRST4GOOD          =100; % this ecode signifies which four fractals have high value  
+ SECOND4GOOD         =101;
+ 
+ 
+ 
+ 
+ RND_RWDCD		   	 =110;
+ RND_RWDOFFCD	   	 =111;
+ PUNISHCD	   	     =112;
+ PUNISHOFFCD	   	 =113;
+ NULLCD	    	     =114;
+ NULLOFFCD	   	     =115;
+ DISCD			     =116;
+ LosetoDis			 =117;
+DISOFF			     =118;
+ BIG_RWD	   	     = 120;
+ SML_RWD             =121;
+ 
+ UBIG_RWD            =122;
+ USML_RWD            =123;
+ SOUNDOFF			 =124;
+ 
+ PREFIX	             =125;
+ RICHSCENE	 =126;
+POORSCENE	 =127;
+RPSCENESEQI	 =128;
+RPSCENESEQII	 =129;
+RPRANDSCENESEQ	 =130;
+ 
+
+ %COMPFIRST4          =130;% this ecode signifies which four fractals were compared if in Comparison mode
+ %COMPSECOND4         =131;
+ %COMPMODE           =132;
+ %SUPERCOMPMODE      =133;
+ MATCHGOOD =131;
+ MATCHBAD  =132;
+ UNMATCHOBJ =133;
+ NEUTRALOBJ=134;
+ OMITGOOD =135;
+ 
+ BLINKDETECT		=136;
+ 
+ 
+ RETGT   =137;
+ INTOMATCH =138;
+ INTONONMATCH =139;
+
+ 
+ ERROR           =140;
+ PREFIXSTARTCD   =141;
+ GAZESTARTCD   =142;
+ CHOICEOFF   =143;
+ PRETGTCD   =144;
+ INTOGOOD   =145;
+ INTOBAD   =146;
+ CHOOSEGOOD   =147;
+ CHOOSEBAD   =148;
+PRETGTOFFCD  =149;
+TONE  =150;
+SEARCHSTARTCD  =151;
+
+INTOOBJ  =152;
+CHOSENOBJ  =156;
+
+SEQGENTYPE  =160;
+
+FIRSTTGT = 171;
+SECONDTGT = 172;
+THIRDTGT = 173;
+FOURTHTGT = 174;
+FIFTHTGT = 175;
+
+FINALFIX = 179;
+FAILFINALFIX = 180;
+
+GGFRAC = 181;
+GBFRAC = 182;
+BGFRAC = 183;
+BBFRAC = 184;
+DGFRAC = 185;
+DBFRAC = 186;
+
+INTOONE = 190;
+INTOTWO = 191;
+
+ADVEYE_STAY = 192;
+AUTO_SHOWOBJ = 193;
+CUEON = 194;
+CUEOFF = 195;
+
+SUCSAC=196;
+SUCGAZ=197;
+
+
+SHAM1=198;
+SHAM2=199;
+SHAM3=200;
+SHAM4=201;
+SHAM5=202;
+SHAM6=203;
+
+STIMT1=204;
+STIMT2=205;
+STIMT3=206;
+STIMT4=207;
+STIMT5=208;
+STIMT6=209;
+
+STIMTRIAL=210;
+NONSTIMTRIAL=211;
+
+
+
+
+ 
+ FIRSTPUNISH		=220;
+ SECONDPUNISH		=221;
+ THIRDPUNISH		=222;
+ FOURTHPUNISH		=223;
+ FIFTHPUNISH		=224;
+SIXTHPUNISH			=225;
+
+ FIRSTROBBER		=226;
+ SECONDROBBER		=227;
+ THIRDROBBER		=228;
+ FOURTHROBBER		=229;
+ FIFTHROBBER		=230;
+SIXTHROBBER			=231;
+
+ACCEPT				=466;
+DONTLOOK			=467;
+REJECT				=468;
+%Object Memory Task
+MATCHOBJ	=469;
+NONMATCHOBJ	=470;
+SAMPLEOBJ	=471;
+CHOICECONFIRM	=472;
+
+STIM1 = 500;
+STIM2 = 501;
+STIM3 = 502;
+SHAM0 = 503;
+
+PRE_STIM = 504;
+ON_STIM = 505;
+OFF_STIM = 506;
+PST_STIM = 507;
+
+
+
+% For Blip2Plexon by XFY 10112020
+PLX_ON		=700;
+PLX_OFF		=701;
+TASK_END    =702;
+
+
+FIRST_BONUS_SCENE=501;%501-512
+ FIRST_BONUS_FRACTAL_GOOD=513;%513-524%Between
+ FIRST_BONUS_FRACTAL_BAD=525;%-536%Between
+ FIRST_BONUS_FRACTAL_NOVEL=581;%592
+ 
+ %SceneID for scramble scenes(601-612)
+FIRST_SCRAMBLE_SCENE=	601;%//-612
+%SceneID for grey scenes(621-632)
+FIRST_GREY_SCENE=  615;%//-627
+UFRACGOOD =   631;% //Corresponding to 81
+UFRACBAD =   630;%//Corresponding to 80
+
+
+%For transporting trial index
+TRIAL_ID     =1000; 
+
+% direction eccentricity ecodes are 200+direction*10+round(ecc/5)
+%Stim stimuli
+ STIM_ON		    =910;
+%Auditory stimuli
+ REGULAR_BEEP		=901;
+ ODD_BEEP			=902;
+ RANDOM_BEEP		=903;
+ RND_RWDCD_NO_TONE	=904;
+ 

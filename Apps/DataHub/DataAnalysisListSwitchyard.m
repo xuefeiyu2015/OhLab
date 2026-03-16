@@ -1,0 +1,150 @@
+%Data analysis switchyard; by Xuefei Yu; 08062019
+function AnalysesName=DataAnalysisListSwitchyard(TaskType)
+ECode;
+ switch TaskType
+     
+     case EYE_CAL_TASK %Eye calibration task
+         AnalysesName={'Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+%Opto/Electrical stimulation related tasks
+     case VIDEO_FREEVIEW_TASK
+         AnalysesName={'FreeViewEyeMovement','FreeViewEyeMovement_txtexport','FreeViewEyeMovement_ExampleExport','EyeTrace_rawIllustration','OptoWaveformPlot','FreeViewEyeMovement_Vari','FreeView_Animation','FreeViewNeuroResponse','FreeViewNeuroResponse_RedLight','FreeViewNeuroResponse_ExampleExport','FreeViewNeuroResponse_Pop','FreeViewNeuroResponse_Pop_ExampleExport','FreeViewNeuroResponse_Vari','FreeViewNeuroResponse_VariPop','SaccadeAnalysis','LaserMeasurement'};
+     case FIXSTIM_TASK
+         AnalysesName={'FreeViewEyeMovement','FreeViewEyeMovement_ExampleExport','FreeViewEyeMovement_Vari','FreeViewNeuroResponse','FreeViewNeuroResponse_Vari','FreeViewNeuroResponse_VariPop','SaccadeAnalysis','ITI_FirstSaccades'};
+     case ENDFIXSTIM_TASK
+         AnalysesName={'FreeViewEyeMovement','FreeViewEyeMovement_ExampleExport','FreeViewEyeMovement_Vari','FreeViewNeuroResponse','FreeViewNeuroResponse_Vari','FreeViewNeuroResponse_VariPop','SaccadeAnalysis','ITI_FirstSaccades'};
+     case SACSTIM_TASK
+         AnalysesName={'DifferentPeriodStimEffect','SaccadeStimEffect','SaccadeStimEffectExample','SaccadeTuningCompare','FreeViewEyeMovement','FreeViewNeuroResponse','FreeViewNeuroResponse_Vari','SaccadeAnalysis','ITI_FirstSaccades'};
+     case ENDSACSTIM_TASK
+         AnalysesName={'DifferentPeriodStimEffect','FreeViewEyeMovement','FreeViewNeuroResponse','FreeViewNeuroResponse_Vari','SaccadeAnalysis','ITI_FirstSaccades'};
+    case FRAC_STIM_TASK
+         AnalysesName={'FractalStimEffect','FreeViewEyeMovement','FreeViewNeuroResponse','FreeViewNeuroResponse_Vari','SaccadeAnalysis'};
+
+
+     case LUMSTIM_TASK %Luminance Stimulation Task
+         AnalysesName={'LuminanceTuning_Stim','FreeViewNeuroResponse','FreeViewNeuroResponse_Pop'};
+     case DSSTIM_TASK %Delay saccade Stimulation Task
+         AnalysesName={'DelaySaccadeVaryPeriodStim','FreeViewNeuroResponse','FreeViewNeuroResponse_Pop'};
+
+
+         
+     case FIX_WITH_DISTRACT %Passive fixation with distractor task
+         AnalysesName={'Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+         
+     case SCC_TASK %Delay saccade task
+         AnalysesName={'SaccadeTuningCompare','VisMotorResponses_Population','SaccadeAnalysis','ITI_FirstSaccades','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+         
+     case MEMSAC_TASK %Memory saccade task
+         AnalysesName={'MemorySaccadeAnalysis','MemorySaccadePopulation','VisualLatencyMeasure','Neuron Basic Analysis','SaccadeAnalysis','ITI_FirstSaccades'};
+         
+     case OBJ_DIR_SAC_TASK %Object directed saccade task(Stable Value)
+         AnalysesName={'RTChange_Inactivation','DifferentPeriodCompare','ObjSaccadeAnalysis','RTGoodBadAnalysis','ObjectResponsesDifferentLocation','ObjectOnsetLatency','ObjectValueLocationRegression','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+     case FLEXIBLE_VALUE_TASK %Object directed saccade task (Flexible Value)
+         AnalysesName={'FlexibleValueResponseAnalysis','ObjSaccadeAnalysis','ObjectResponsesDifferentLocation','ObjectOnsetLatency','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+     case OBJ_MEM_SAC_TASK %Object Memory saccade (Stable Value)
+         AnalysesName={'ObjectMemorySaccadeBehavior','ObjSaccadeAnalysis','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Performance analysis','Neuron Basic Analysis'};
+     case FLEXOBJ_MEM_SAC_TASK %Object Memory saccade (Flexible Value)
+         AnalysesName={'ObjectMemorySaccadeBehavior','ObjSaccadeAnalysis','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Performance analysis','Neuron Basic Analysis'};
+            
+     case  SEQUENCE_MEMORY_TASK    %Sequence Memory Task
+          AnalysesName={'SequenceMemoryBehavior'};
+     case FRACTAL_PATH_TASK %Fractal path sequence task
+         AnalysesName={'Sequence NeuralAnalysis Object','LearningOfSequence','LearningOfSequence NeuralResponse','Sequence Behavior Analysis','Neuron Basic Analysis','SaccadeAnalysis','VideoReconstructionForPath'};
+     case SCENE_PATH_TASK %Scene path sequence task
+         AnalysesName={'Sequence NeuralAnalysis Object','LearningOfSequence','LearningOfSequence NeuralResponse','SceneTuning','Sequence Behavior Analysis','Neuron Basic Analysis','SaccadeAnalysis','VideoReconstructionForPath'};
+     case SCENE_SEQLEARN_TASK %Scene based object sequence task
+         AnalysesName={'ObjectSeq NeuralAnalysis','SceneTuning','ObjSeq BehaviorAnalysis'};
+         
+     case FRAC_RWDSEQ_TASK %Reward order task
+         AnalysesName={'RewardOrderChoiceAnalysis','RewardOrderNeuralAnalysis'};
+         
+         
+     case ONEDR_TASK %One direction reward task
+         AnalysesName={'OneDRAnalysis','OneDR_RT'};
+     case OBJ_LOCATIONVALUE_TASK %Object Location Value Task
+         AnalysesName={'OneDRAnalysis','OneDR_RT'};
+
+     case VARYANGLESTIM_TASK %Vary angle stimulation task
+         AnalysesName={'VaryAngleStimulation'};
+
+
+           
+         
+     case FRAC_PAS_VIEW_TASK %Fractal Passive viewing task
+         AnalysesName={'FractalTuning_Passive','EachLocFractalTuning_Passive','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+     case SCENE_PAS_VIEW_TASK %Scene passive viewing task
+         AnalysesName={'SceneTuningPassiveView','CatogrySceneResponsePassiveView','ITI_ScenePassiveView','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+        
+      case SCENE_FREE_VIEW_TASK  %Scene free viewing task
+         AnalysesName={'SceneTuningFreeView','CatogrySceneResponseFreeView','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+      
+     case SCENEOBJ_PASSIVE_VIEW_TASK   %Scene and object passive viewing task
+         AnalysesName={'SceneFractalTuning_PassiveView','Performance analysis','Neuron Basic Analysis'};
+         
+         
+         
+     case FIXSEQSCENE_FREE_VIEW_TASK %Scene Sequence Free Viewing Task
+         AnalysesName={'SceneTuningSequenceFreeView','SceneTuningFreeView'};
+     case FIXSEQSCENE_PASSIVE_VIEW_TASK %Scene Sequence Free Viewing Task
+         AnalysesName={'SceneTuningSequenceFreeView','SceneTuningPassiveView'};
+         
+     case FRAC_FREE_VIEW_TASK %Fractal free viewing task
+         AnalysesName={'Eye movement analysis','CatogrySceneResponseFreeView','Performance analysis','Neuron Basic Analysis'};
+         
+     case FORAGING_TASK %Foraging task
+         AnalysesName={'EventSegregationAnalysis','Performance analysis(Foraging)','Neuron Basic Analysis','GazeLocationSelectivityAnalysis','SceneOnExplore_NeuralAnalysis','SceneFractalAssociationCheck','ForagingRasterCheck','FractalOrderNeuralAnalysis','SceneTuning','RandomSeqFixSeqCompare','FractalTuning','TargetSaccadeAnalysis','SaccadeAnalysis','RewardResponseAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','MotivationAndReactionTime_Analysis','BonusTrialAnalysis','RandomFixOrderSceneSep','ITI_RandomSeqFixSeqCompare','Eye movement analysis'};
+  
+    
+     case OBJMATCHSAMPLE_TASK %Stable Value Delay match to sample task
+         AnalysesName={'DelayObjectResponsesAnalysis','DelayObjectTestsResponsesAnalysis','MemoryBehaviorAnalysis','ShortLong_MemoryBehaviorAnalysis','Neuron Basic Analysis'};
+         
+     case FLEXMATCHSAMPLE_TASK %Flexible Value Delay match to sample task
+         AnalysesName={'DelayObjectResponsesAnalysis','DelayObjectTestsResponsesAnalysis','MemoryBehaviorAnalysis','ShortLong_MemoryBehaviorAnalysis','Neuron Basic Analysis'};
+         
+         
+     case RFMAPPER_OBJ_TASK %Fractal RF mapping Task
+         AnalysesName={'FractalTuning_Passive','EachLocFractalTuning_Passive','GoodBadInRF','RF_Mapping_Task PSTH','Performance analysis'};
+         
+     case FORAGING_TASK_SEQ %Foraging Task with scene sequence version
+         AnalysesName={'EventSegregationAnalysis','Performance analysis(Foraging)','Neuron Basic Analysis','GazeLocationSelectivityAnalysis','ForagingRasterCheck','SceneFractalAssociationCheck','SceneOnExplore_NeuralAnalysis','FractalOrderNeuralAnalysis','SceneTuning','RandomSeqFixSeqCompare','FractalTuning','TargetSaccadeAnalysis','SaccadeAnalysis','RewardResponseAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','MotivationAndReactionTime_Analysis','BonusTrialAnalysis','RandomFixOrderSceneSep','ITI_RandomSeqFixSeqCompare','Eye movement analysis'};
+     case FORAGING_TASK_LOCSEQ %Foraging Task with location sequence version
+         AnalysesName={'EventSegregationAnalysis','Performance analysis(Foraging)','Neuron Basic Analysis','GazeLocationSelectivityAnalysis','ForagingRasterCheck','SceneFractalAssociationCheck','SceneOnExplore_NeuralAnalysis','FractalOrderNeuralAnalysis','SceneTuning','RandomSeqFixSeqCompare','FractalTuning','TargetSaccadeAnalysis','SaccadeAnalysis','RewardResponseAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','MotivationAndReactionTime_Analysis','BonusTrialAnalysis','RandomFixOrderSceneSep','ITI_RandomSeqFixSeqCompare','Eye movement analysis'};
+     case  FORAG_CP_TASK % Foraging Central periperal task
+         AnalysesName={'EventSegregationAnalysis','Performance analysis(Foraging)','Neuron Basic Analysis','CenterPeriperalTargetResponseAnalysis','GazeLocationSelectivityAnalysis','ForagingRasterCheck','SceneFractalAssociationCheck','SceneOnExplore_NeuralAnalysis','FractalOrderNeuralAnalysis','SceneTuning','RandomSeqFixSeqCompare','FractalTuning','TargetSaccadeAnalysis','SaccadeAnalysis','RewardResponseAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','MotivationAndReactionTime_Analysis','BonusTrialAnalysis','RandomFixOrderSceneSep','ITI_RandomSeqFixSeqCompare','Eye movement analysis'};
+     case RPSCENESEQ_TASK %Rich Poor scene sequence task
+          AnalysesName={'EventSegregationAnalysis','Performance analysis(Foraging)','SequenceCompareEachBlock','Neuron Basic Analysis','GazeLocationSelectivityAnalysis','ForagingRasterCheck','SceneFractalAssociationCheck','SceneOnExplore_NeuralAnalysis','FractalOrderNeuralAnalysis','SceneTuning','RandomSeqFixSeqCompare','FractalTuning','TargetSaccadeAnalysis','SaccadeAnalysis','RewardResponseAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','MotivationAndReactionTime_Analysis','BonusTrialAnalysis','RandomFixOrderSceneSep','ITI_RandomSeqFixSeqCompare','Eye movement analysis'};   
+     case FORAGING_EXPLORE_TASK %Foraging Explore Task
+         AnalysesName={'ExploreBehaviorAnalysis','ExploreLearningCurve','ExploreBehaviorPuipleAnalysis','ExploreBehaviorScrambleCompare','SceneObjResponseSummary','ITI_CorrAnalysis','FourBlockTypeSceneResponseCompare','RepetitionChangeAnalysis','ExploreSaccadeAnalysis','RejectReactionAnalysis','EventSegAcrossModeWithRT','EventSegregationAnalysis','BeforeAfterSceneResponsesWithSeq','GazeLocationSelectivityAnalysis','FixOffPredictabilityNeuralAnalysis','FractalEffortNeuralAnalysis','SceneOnResponseAcrossModes','CrossModeNeuralAnalysis','ExploreNeuralAnalysis','ExploreRTNeuralCorrelatesAnalysis','ExploreSacGazNeuralAnalysis','ExploreFilterSacNeuralAnalysis','Explore_NeuralRaster_Check','SceneOnExplore_NeuralAnalysis','SaccadeAnalysis','ITI_RandomSeqFixSeqCompare','RandomSeqFixSeqCompare','SceneTuning','FractalTuning','SceneFractalAssociationCheck','TargetSaccadeAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','Performance analysis(Foraging)','Neuron Basic Analysis','VideoReConstructionForExplore'};
+     case FORAGING_EXPLORE_TASK_ITL %Foraging Explore Task(Interleave)
+         AnalysesName={'ExploreBehaviorAnalysis','ExploreLearningCurve','ExploreBehaviorPuipleAnalysis','ExploreBehaviorScrambleCompare','SceneObjResponseSummary','ITI_CorrAnalysis','FourBlockTypeSceneResponseCompare','RepetitionChangeAnalysis','ExploreSaccadeAnalysis','RejectReactionAnalysis','EventSegAcrossModeWithRT','EventSegregationAnalysis','BeforeAfterSceneResponsesWithSeq','GazeLocationSelectivityAnalysis','FixOffPredictabilityNeuralAnalysis','FractalEffortNeuralAnalysis','SceneOnResponseAcrossModes','CrossModeNeuralAnalysis','ExploreNeuralAnalysis','ExploreRTNeuralCorrelatesAnalysis','ExploreSacGazNeuralAnalysis','ExploreFilterSacNeuralAnalysis','Explore_NeuralRaster_Check','SceneOnExplore_NeuralAnalysis','SaccadeAnalysis','ITI_RandomSeqFixSeqCompare','RandomSeqFixSeqCompare','SceneTuning','FractalTuning','SceneFractalAssociationCheck','TargetSaccadeAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','Performance analysis(Foraging)','Neuron Basic Analysis','VideoReConstructionForExplore'};
+     case FORAGING_EXPLORE_TASK_LONG %Foraging Explore Task
+         AnalysesName={'ExploreBehaviorAnalysis','ExploreSaccadeAnalysis','RejectReactionAnalysis','SceneFractalAssociationCheck','EventSegregationAnalysis','GazeLocationSelectivityAnalysis','ITI_RandomSeqFixSeqCompare','RandomSeqFixSeqCompare','SceneTuning','FractalTuning','SaccadeAnalysis','TargetSaccadeAnalysis','Foraging Task PSTH','Foraging Task Location Selectivity','Performance analysis(Foraging)','Neuron Basic Analysis','VideoReConstructionForExplore'};
+     case OBJMEORY_TASK %Object memory foraging task
+         AnalysesName={'SceneObjecrtMemoryAnalysis'};
+         
+     case SCENEOBJ_NEW_LEARNING_TASK %Foraging New Learning Task
+         AnalysesName={'NewLearningAnalysis','RepetitionChangeAnalysis','EventSegregationAnalysis','SceneTuning','FractalTuning','Foraging Task PSTH'};
+     case EXPLORE_TASK_VARYEYEPOS  %Foraging Explore Task with vary eye position
+         AnalysesName={'ExploreBehaviorAnalysis_VarEye','ExploreBehaviorAnalysis','ExploreLearningCurve','ExploreSaccadeAnalysis','RejectReactionAnalysis'};
+         
+     case SCENEFREEFORAGING_TASK  %Scene Free Foraging Task
+         AnalysesName={'FreeForagingBehaviorAnalysis','GazeFieldMeasurementAnalysis'};
+         
+            
+         
+         
+         
+     case BATCH %Batch analysis
+         AnalysesName={'Batch_FreeViewBehavior','Batch_FreeViewBehavior_Grid','Batch_DelaySaccadeStim','Batch_FixStimGapStimCompare','Batch_FixStimFixation','Batch_FreeViewBehavior_VaryDurAmp','Batch_Opto_WaveFormClustering','Batch_StableValue_Behavior','Batch_StableValue_All','Batch_OneDR_Behavior','Batch_StableValue_Opto','Batch_StableOneDR_Opto','Batch_FlexibleValueOpto','Batch_OneDR','Batch_OptoOneDR','Batch_OptogeneticsFreeView','Batch_FEF_SC_VideoFreeView','Batch_FEF_SC_VideoFreeView_ExampleExport','Batch_OptogeneticsFreeView_SC','Batch_Optogenetics_FEF','Batch_Optogenetics_Control','Batch_Optogenetics_FEF_Depth','Batch_Optogenetics_SNr','Batch_Optogenetics','Batch_Opto_ValueTasks','Batch_SequenceLearning','Batch_VideoFreeView_Neural','Batch_MemorySaccade','Batch_MemorySaccadeLatency','Batch_ObjectLatency','Batch_SaccadeAnalysis','Batch_FourBlockCmp_Exploration','Batch_EventRT_Exploration','NeuronClassification_Foraging','Batch_SceneTuning_Foraging','Batch_FractalTuning_Foraging','Batch_SceneFractalCorrelation_Foraging','Batch_Saccade_Foraging'};
+         
+     otherwise
+         AnalysesName={'UndefinedTASK, Add the task to the ecode first!'};
+         
+         
+         
+     
+ end
+
+
+end
+
+

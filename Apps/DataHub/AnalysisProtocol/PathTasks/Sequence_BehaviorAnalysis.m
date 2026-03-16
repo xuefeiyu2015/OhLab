@@ -1,0 +1,1200 @@
+function Sequence_BehaviorAnalysis(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+
+%Protocol to analysis the monkey's learning behavior
+ECode;
+DataPath= Data.Path;
+FileName=Data.FileName;
+TaskType=Data.TaskType;
+TaskCode=Data.TaskCode;
+
+%User controlling parameters
+PlotEveryNTrial = 10; %Calculate correct rate/RT every N trials 
+PlotCorrectStep = 1;% Sliding window for correct rate/RT
+tolerateN = 5; %Last tolerate N of trials in the end of the bin
+Cri = 5; %Continous criterium
+
+%For calculating completing time change
+PlotEveryNTrial_CT = 10;
+PlotCorrectStep_CT = 1;
+tolerateN_CT = 1;
+
+ErrorTol =0; %Error tolerance for the criterium;typically it's 1(0, earlier)
+
+PlotExample = 1;
+ExampleSeq = 34;
+UseMean = 1;
+
+
+codecheck = FindOutTime(Data.EventChannel,Data.EventTimeChannel,FIRSTTGT);
+codecheck=codecheck(~isnan(codecheck ));
+
+if isempty(codecheck)
+    disp("Old events, auto transform segment events");
+    
+    CheckCode=[TGTCD;TGTOFF];
+    AbnormalTrials=AbnormalTrialCheck(Data,CheckCode);
+    
+    OldCode = 1;
+   % SegEvent=[FIXOFF,TGTCD];%Event Flow of interest
+      
+else
+    
+
+%Abnormal check for equality
+CheckCode=[[FIRSTTGT:FIFTHTGT];[TGTOFF,TGTOFF,TGTOFF,TGTOFF,TGTOFF]];
+AbnormalTrials=AbnormalTrialCheck(Data,CheckCode);
+
+OldCode =0;
+%SegEvent=[FIXOFF,FIRSTTGT:FIFTHTGT,FINALFIX];%Event Flow of interest
+ 
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Unpack all the data base and task settings
+
+Selection=StartTrial:EndTrial;
+%{
+%Abnormal check %Especially For Robin081120FORAGEXPLO4.rst
+CheckCode=SCENE_ON;%This code should appear once in each trial
+AbnormalTrials=AbnormalTrialCheck(Data,CheckCode);
+
+Selection=Selection(~ismember(Selection,AbnormalTrials));
+%}
+TrialNum=length(Selection);
+
+%FixationPointIndex=Data.FixPointIndex(Selection,:);
+%FixLoc=Data.FixLoc(Selection,:,:);
+
+
+TargetIndex=Data.TargetIndex(Selection,2:end,1);
+TargetName=Data.TargetIndex(Selection,2:end,2);
+%TargetLoc=Data.TargetLoc(Selection,:,:);
+
+TargetNum=Data.TargetNum(Selection,2:end);
+TargetLoc=Data.TargetLoc(Selection,2:end,:);
+TargetPolarLoc= Data.TargetPolarLoc(Selection,2:end,:);
+
+Color=[lines(6);prism(6);pink(6)];
+%Color(2,:)=copper(1)+0.5;
+Color=[Color;hsv(10)];
+Color(18,:)=[0.1,0.457,0.194];
+Color=[Color;Color*0.5];
+Color=[Color;Color*0.8];
+
+%SuccessfulMat = TransformResult(TargetNum);%The last one is not accurate
+
+%CorrectTrialIndex = sum(SuccessfulMat,2)==size(TargetNum,2);
+
+%Sequence information from the library
+ParaLib=Data.ParaLib;
+if ismember('HyperSetNO,ManuelFlag,LocSeqCode',keys(ParaLib))
+    Seq_Info=ParaLib('HyperSetNO,ManuelFlag,LocSeqCode');
+    Seq_Info=Seq_Info(Selection,:);
+    SeqNo=Seq_Info(:,2);
+end
+
+if ismember('LocationSeqTgt,LocationSeqDis',keys(ParaLib))
+    Seq_InfoLoc=ParaLib('LocationSeqTgt,LocationSeqDis');
+    Seq_InfoLoc=ReOrganizeData(Seq_InfoLoc(Selection,:));
+end
+
+%Check the penalty used initially 
+Penalty=ParaLib('BadObjectPenalty');
+Penalty = ReOrganizeData(Penalty(Selection,:));
+
+%Reconstruct sequence code from the target location
+SeqType = floor(SeqCode(squeeze(TargetPolarLoc(:,:,1))));
+SeqAll = [SeqNo,SeqType(:,end)];
+SeqAllUnique = unique(SeqAll,'rows','stable');
+SeqAllUnique =uint64(SeqAllUnique(~isnan(SeqAllUnique(:,2)),:));
+
+%For convenience, represent sequence with NO
+SeqNoUnique = SeqAllUnique(:,1);
+SeqCodeUnique = SeqAllUnique(:,2);
+
+UniqueSeq = SeqNoUnique;%Use sequence NO for the seq loops
+SeqCodeUse = SeqNo;
+
+SequenceLength = sum(~isnan(TargetNum),2);
+UnqiueSeqLength = unique(SequenceLength);
+
+%Event channel
+
+EventChannel=Data.EventChannel(Selection,:);
+EventTimeChannel=Data.EventTimeChannel(Selection,:);
+EventBin=Data.EventBin(Selection,:);
+%GetEyeData
+EyeData=Data.EyeDataRaw;
+EyeChannel_X_L=EyeData(Selection,1);
+EyeChannel_Y_L=EyeData(Selection,2);
+%EyeChannel_X_R=EyeData(Selection,3);
+%EyeChannel_Y_R=EyeData(Selection,4);
+
+
+EyeBinWidth=Data.EyeBinWidth;
+
+%Recalibrate eyes according to the extra FP
+EyeCalInfo=Data.EyeCalInfo;%Each row: X_Gain,X_Bias; Y_Gain; Y_bias; X=(raw+X_bias)*X_Gain
+EyeCalInfo_L=EyeCalInfo(1,:);
+
+%Transform the data if it is the old code
+if OldCode
+    
+    
+    EndCheck =ReproduceFromEvent(EventChannel,SHOWFIXCD);
+    EndCheck = double((cellfun(@numel,EndCheck)==2));
+    EndCheck(EndCheck==0)=NaN;
+
+    SegEvent=[SHOWFIXCD,TGTCD];%Event Flow of interest
+    
+    
+    
+else
+    
+
+    EndCheck =ReproduceFromEvent(EventChannel,FINALFIX);
+    EndCheck = double(~cellfun(@isempty,EndCheck));
+    EndCheck(EndCheck==0)=NaN;
+
+    SegEvent=[SHOWFIXCD,FIRSTTGT:FIFTHTGT,FINALFIX];%Event Flow of interest
+
+end
+
+SegEventEnd=NaN*ones(1,length(SegEvent));
+SegEventStr={'FixOn','1TGT','2TGT','3TGT','4TGT','5TGT','LastFix'};
+
+PlotStartOffset=1000*ones(1,length(SegEvent));%in ms
+PlotStopOffset=NaN*ones(1,length(SegEvent));%in ms
+
+
+%First show the learning rate for each hyperset and each set in a hyperset
+%Correct Rate
+TotalTrialNum = size(EventChannel,1);
+CorrectTrialIndicator = cell2mat(ReproduceFromEvent(EventChannel,[ERROR,CORRECTCD]));
+CorrectTrialNum = sum(CorrectTrialIndicator ==CORRECTCD);
+ErrorTrialNum = sum(CorrectTrialIndicator ==ERROR);
+
+CorrectTrialIndex = CorrectTrialIndicator ==CORRECTCD;
+ErrorTrialIndex = CorrectTrialIndicator ==ERROR;
+
+
+SuccessfulMat=ReorganizeEye( ReproduceFromEvent(EventChannel,[MATCHOBJ,NONMATCHOBJ]));
+SuccessfulMat(SuccessfulMat==MATCHOBJ)=1;
+SuccessfulMat(SuccessfulMat==NONMATCHOBJ)=0;
+SuccessfulMatFull = [ones(size(SuccessfulMat,1),1),SuccessfulMat,EndCheck'];
+
+%Second, calculate the completion time for each set(Time from tgt on to into matched obj) and each whole hyperset
+%(Time from first fix off to last fix on)
+for j = 1:length(SegEvent)
+    EventTime{j}=FindOutTime(EventChannel,EventTimeChannel,SegEvent(j));
+
+end
+
+if OldCode
+    HyperSetCompletTime = EventTime{1}(:,2) - EventTime{1}(:,1);
+    
+    TargetOnTime = cell2mat(EventTime(2:end));
+else
+    HyperSetCompletTime = EventTime{end}(:,1) - EventTime{1}(:,1);
+    TargetOnTime = cell2mat(EventTime(2:end-1));
+
+end
+
+
+
+%Time to complete each set
+%TargetOnTime = cell2mat(EventTime(2:end-1));
+%Make choice time
+ChooseMatchTime =FindOutTime(EventChannel,EventTimeChannel,MATCHOBJ);
+TgtAcqusitionTime = ChooseMatchTime -TargetOnTime;
+Ave_TgtAcTime = nanmean(TgtAcqusitionTime,2);
+
+
+
+
+
+%Predictive Eye Position Analysis
+TargetOffTime=FindOutTime(EventChannel,EventTimeChannel,TGTOFF);
+FixOffTime=FindOutTime(EventChannel,EventTimeChannel,FIXOFF);
+FixOffTimeFirst = FixOffTime(:,1);
+LastEventOff = [FixOffTimeFirst,TargetOffTime(:,1:4)];
+EventOn = TargetOnTime(:,1:5);
+
+
+FixOnTime=FindOutTime(EventChannel,EventTimeChannel,SHOWFIXCD);
+FixOnTimeFirst = FixOnTime(:,1);
+
+%CurrentEventOn= [FixOnTimeFirst,EventOn,FixOnTime(:,2)];
+
+Eye_X_Off = NaN*ones(size(LastEventOff));
+Eye_Y_Off = Eye_X_Off;
+
+Eye_X_On = Eye_X_Off;
+Eye_Y_On = Eye_Y_Off;
+
+
+%Find the eye position when event off
+
+for i = 1:size(LastEventOff,1)
+    sel = round(LastEventOff(i,:));
+    sel = sel(~isnan(sel));
+    sel1= sel;
+    Eye_X_Off(i,1:length(sel)) = EyeChannel_X_L{i}(sel);
+    Eye_Y_Off(i,1:length(sel)) = EyeChannel_Y_L{i}(sel);
+
+
+    sel = round(EventOn(i,:));
+    sel = sel(~isnan(sel));
+    sel2=sel;
+    Eye_X_On(i,1:length(sel)) = EyeChannel_X_L{i}(sel);
+    Eye_Y_On(i,1:length(sel)) = EyeChannel_Y_L{i}(sel);
+
+  
+
+end 
+
+
+
+EyeVector_X = Eye_X_On-Eye_X_Off;
+EyeVector_Y = Eye_Y_On-Eye_Y_Off;
+
+Tgt_X= TargetLoc(:,1:2:size(TargetLoc,2),1);
+Tgt_Y = TargetLoc(:,1:2:size(TargetLoc,2),2);
+
+Dis_X= TargetLoc(:,2:2:size(TargetLoc,2),1);
+Dis_Y = TargetLoc(:,2:2:size(TargetLoc,2),2);
+
+Fix_X = 0* ones(size(Tgt_X,1),1);
+Fix_Y = 0* ones(size(Tgt_Y,1),1);
+
+Tgt_X_Off = [Fix_X,Tgt_X(:,1:4)];
+Tgt_Y_Off = [Fix_Y,Tgt_Y(:,1:4)];
+
+Tgt_X_On = [Tgt_X(:,1:5)];
+Tgt_Y_On = [Tgt_Y(:,1:5)];
+
+
+Tgt_Vector_X = Tgt_X_On-Tgt_X_Off;
+Tgt_Vector_Y = Tgt_Y_On-Tgt_Y_Off;
+
+Dis_X_Off = [Fix_X,Dis_X(:,1:4)];
+Dis_Y_Off = [Fix_Y,Dis_Y(:,1:4)];
+
+Dis_X_On = [Dis_X(:,1:5)];
+Dis_Y_On = [Dis_Y(:,1:5)];
+
+Dis_Vector_X = Dis_X_On-Dis_X_Off;
+Dis_Vector_Y = Dis_Y_On-Dis_Y_Off;
+
+
+Dist = sqrt((Tgt_X_On - Eye_X_On).^2+(Tgt_Y_On - Eye_Y_On).^2);
+Dist_Dis =  sqrt((Dis_X_On - Eye_X_On).^2+(Dis_Y_On - Eye_Y_On).^2);
+
+
+for i = 1:size(LastEventOff,1)
+    for j = 1:size(Tgt_Vector_X,2)
+
+        %To target
+        u = [Tgt_Vector_X(i,j),Tgt_Vector_Y(i,j)];
+        v= [EyeVector_X(i,j),EyeVector_Y(i,j)];
+
+        if isnan(u)
+            ThetaInDegrees(i,j)=NaN;
+            
+        else
+
+        CosTheta = max(min(dot(u,v)/(norm(u)*norm(v)),1),-1);
+        ThetaInDegrees(i,j) = real(acosd(CosTheta));
+
+        %To distractor
+        u = [Dis_Vector_X(i,j),Dis_Vector_Y(i,j)];
+        v= [EyeVector_X(i,j),EyeVector_Y(i,j)];
+
+   
+        end
+
+         if isnan(u)
+            DistThetaInDegrees(i,j)=NaN;
+            
+        else
+
+        CosTheta = max(min(dot(u,v)/(norm(u)*norm(v)),1),-1);
+        DistThetaInDegrees(i,j) = real(acosd(CosTheta));
+         end
+
+
+    end
+end
+
+
+
+
+%rc_w = 40;rc_h = 40;
+%{
+rc_w = 0;rc_h = 0;
+figure
+ quiver(Tgt_X_Off(:,1)+rc_w/2,Tgt_Y_Off(:,1)+rc_h/2,Tgt_Vector_X(:,1),Tgt_Vector_Y(:,1),'LineWidth',3,'MaxHeadSize',5,'Color','r','AutoScale','off');
+hold on 
+
+ quiver(Eye_X_Off(:,1)+rc_w/2,Eye_Y_Off(:,1)+rc_h/2,EyeVector_X(:,1),EyeVector_Y(:,1),'LineWidth',3,'MaxHeadSize',5,'Color','b','AutoScale','off');
+%}
+
+ %{
+  TargetLoc_curr_X = nanmean(TargetLoc(sel,:,1),1);
+    TargetLoc_curr_Y = nanmean(TargetLoc(sel,:,2),1);
+    curr_X(i,:) = [0,0,TargetLoc_curr_X,0,0];
+    curr_Y(i,:) = [0,0,TargetLoc_curr_Y,0,0];
+
+%}
+
+
+
+
+
+%Loop  over each hyperset for correct rate and seq complete time
+%Loop over the sequence 
+
+for i = 1:length(UniqueSeq)
+    sel = SeqCodeUse == UniqueSeq(i);
+%     if UniqueSeq(i) == 15
+%         keyboard
+%     end
+    
+   
+    %Calculate the correct rate for N trials 
+    Correct_Seq = CorrectTrialIndex(sel);
+
+    % Overall correct rate
+    CorrectRate(i) = sum(Correct_Seq )/length(Correct_Seq);
+    TgtAcTime(i) = mean(TgtAcqusitionTime(sel & CorrectTrialIndex',:),"all");
+    TotalCompleteTrial(i) = length(Correct_Seq);
+    CorrectTrial(i) = sum(Correct_Seq );
+
+
+
+
+    CorrectRateNTrial = CalculateEveryNTrial(Correct_Seq,PlotEveryNTrial,PlotCorrectStep,tolerateN,0);
+    CR_Seq{i} = CorrectRateNTrial.data;
+    CR_Bin{i} = CorrectRateNTrial.time;
+
+    %Trials needed to reach 60% correct rate 
+    
+        if find(CR_Seq{i}>=0.6,1)>0
+            TrialOver60(i) = CR_Bin{i}(find(CR_Seq{i}>=0.6,1));
+        else
+            TrialOver60(i) = NaN;
+        end
+   
+    
+    %Caculate the number of continous trials seq for each hypterset
+    NCountinousTrials = CalculateNumberOfContinousTrials(Correct_Seq,ErrorTol);
+    
+    NCon(i) = max(NCountinousTrials.conseq);
+    
+    if NCon(i)==0
+        NTrialToCri(i)=NaN;
+        
+    else
+        if NCon(i) >= Cri
+            NTrialToCri(i) = NCountinousTrials.starttrial(find(NCountinousTrials.conseq >= Cri,1,'first'))-1;
+        else
+            %NTrialToCri(i) = NCountinousTrials.starttrial(find(NCountinousTrials.conseq == NCon(i),1,'last'))-1;   
+            NTrialToCri(i) = sum(sel);   
+        end
+    end
+
+    %% Eye movement analysis 
+
+    Dist_Seq = Dist(sel,:);
+    %Dist_Seq_Correct = nanmean(Dist(sel&CorrectTrialIndex',:),2);
+    if UseMean ==1
+        Dist_Seq_Correct = nanmean(Dist(sel&CorrectTrialIndex',:),2);
+    else
+    Dist_Seq_Correct = nanmedian(Dist(sel&CorrectTrialIndex',:),2);
+    end
+
+
+    Dist_Seq_Dis = Dist_Dis(sel,:);
+    if UseMean ==1
+        Dist_Seq_Correct_Dis = nanmean(Dist_Dis(sel&CorrectTrialIndex',:),2);
+        ThetaInDegrees_Correct=nanmean(ThetaInDegrees(sel&CorrectTrialIndex',:),2);
+
+        ThetaInDegrees_Correct_Dist=nanmean(DistThetaInDegrees(sel&CorrectTrialIndex',:),2);
+
+         calmedian = 0;
+    
+
+    else
+        Dist_Seq_Correct_Dis = nanmedian(Dist_Dis(sel&CorrectTrialIndex',:),2);
+        ThetaInDegrees_Correct=nanmedian(ThetaInDegrees(sel&CorrectTrialIndex',:),2);
+
+        ThetaInDegrees_Correct_Dist=nanmedian(DistThetaInDegrees(sel&CorrectTrialIndex',:),2);
+
+         calmedian = 1;
+    
+
+     
+
+    end
+
+
+
+   
+ output_at_tmp= CalculateEveryNTrial(Dist_Seq_Correct,PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,calmedian);
+     Dist_Seq_LC{i} =output_at_tmp.data;
+
+     output_at_tmp= CalculateEveryNTrial(Dist_Seq_Correct_Dis,PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,calmedian);
+     Dist_Seq_LC_Dis{i} =output_at_tmp.data;
+    
+
+
+     
+
+
+
+
+
+
+
+      output_at_tmp= CalculateEveryNTrial(ThetaInDegrees_Correct,PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,calmedian);
+     Angle_Seq_LC{i} =output_at_tmp.data;
+
+     output_at_tmp= CalculateEveryNTrial(ThetaInDegrees_Correct_Dist,PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,calmedian);
+     Angle_Seq_LC_Dist{i} =output_at_tmp.data;
+
+     All_Dist = Dist(sel&CorrectTrialIndex',:);
+     All_Dist_Line = reshape(All_Dist,1, numel(All_Dist));
+
+      if UseMean ==1
+        Dist_Seq_Mean(i) = nanmean( All_Dist_Line);
+      else
+
+        Dist_Seq_Mean(i) = nanmedian( All_Dist_Line);
+      end
+
+     Dist_Seq_Sem(i)= nanstd( All_Dist_Line)/sqrt(length(All_Dist_Line));
+
+      All_Dist_Dis = Dist_Dis(sel&CorrectTrialIndex',:);
+     All_Dist_Dis_Line = reshape(All_Dist_Dis,1, numel(All_Dist_Dis));
+if UseMean ==1
+     Dist_Seq_Dis_Mean(i) = nanmean( All_Dist_Dis_Line);
+else
+     Dist_Seq_Dis_Mean(i) = nanmedian( All_Dist_Dis_Line);
+end
+     Dist_Seq_Dis_Sem(i)= nanstd( All_Dist_Dis_Line)/sqrt(length(All_Dist_Dis_Line));
+
+
+     All_Angle = ThetaInDegrees(sel&CorrectTrialIndex',:);
+     All_Angle_Line = reshape(All_Angle,1, numel(All_Angle));
+     if UseMean ==1
+         Angle_Seq_Mean(i) = nanmean(All_Angle_Line);
+     else
+        Angle_Seq_Mean(i) = nanmedian(All_Angle_Line);
+     end
+     Angle_Seq_Sem(i) = nanstd(All_Angle_Line)/sqrt(length(All_Angle_Line));
+
+
+       All_Angle_Dis = DistThetaInDegrees(sel&CorrectTrialIndex',:);
+     All_Angle_Dis_Line = reshape(All_Angle_Dis,1, numel(All_Angle_Dis));
+     if UseMean == 1
+        Angle_Seq_Dis_Mean(i) = nanmean(All_Angle_Dis_Line);
+     else
+        Angle_Seq_Dis_Mean(i) = nanmedian(All_Angle_Dis_Line);
+     end
+     Angle_Seq_Dis_Sem(i) = nanstd(All_Angle_Dis_Line)/sqrt(length(All_Angle_Dis_Line));
+
+
+
+
+    
+    
+   
+%{
+    for j = 1:length(SegEventStr)
+
+         SuccessfulMatcurr=SuccessfulMatFull(:,j);
+            select = ~isnan(SuccessfulMatFull(:,j));
+            correctSelector = SuccessfulMatcurr==1 & sel;%correct trial index for the current scene
+
+            
+            select_eye_correct = correctSelector ;
+            
+
+
+
+
+
+        curr_Eye_x{i,j} = Eye_Aligned_X{j}(select_eye_correct,:);
+        curr_Eye_y{i,j} = Eye_Aligned_Y{j}(select_eye_correct,:);
+        
+        curr_Eye_x_error{i,j} = Eye_Aligned_X{j}(sel&(SuccessfulMatcurr == 0),:);
+        curr_Eye_y_error{i,j} = Eye_Aligned_Y{j}(sel&(SuccessfulMatcurr == 0),:);
+       
+        
+        curr_Eye_time{i,j}=Eye_Aligned_Time{j}(select_eye_correct,:);
+
+
+    end
+%}
+
+
+
+    %% Learning curve
+    SeqLegend{i} =sprintf('Seq%d',UniqueSeq(i)) ;
+    SeqLegendwithC{i} =sprintf('Seq%d(%d)',UniqueSeq(i),NCon(i)) ;
+    
+    %Calculate the average Hyperset Completion Time for each Hyperset
+     output_tmp= CalculateEveryNTrial(HyperSetCompletTime(sel & CorrectTrialIndex')',PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,0);
+     HypersetCT{i} =output_tmp.data;
+     HypersetCT_ave(i) = mean(HypersetCT{i});
+     
+     %Calculate the average tgt acquisition time for each set in each
+     %hyperset
+     output_at_tmp= CalculateEveryNTrial(Ave_TgtAcTime(sel & CorrectTrialIndex')',PlotEveryNTrial_CT,PlotCorrectStep_CT,tolerateN_CT,0);
+     Hyperset_Ave_AT{i} =output_at_tmp.data;
+     Hyperset_Seq_Ave(i) = mean(Hyperset_Ave_AT{i});
+     
+     %Calculate the tgt acquisition time within each hyperset
+     TA_time_set(i,:) = nanmean(TgtAcqusitionTime(sel & CorrectTrialIndex',:),1);
+
+
+     %Calculate the tgt acqusition time for each set in one hyperset 
+
+     TgtATimeEach=TgtAcqusitionTime(sel & CorrectTrialIndex',:);
+     NumCTrial=size(TgtATimeEach,1);
+
+     TgtATimeEach_Early = TgtATimeEach(1:min(10,floor(NumCTrial/2)),:);
+
+     TgtATimeEach_Late = TgtATimeEach((NumCTrial-min(10,floor(NumCTrial/2))+1):NumCTrial,:);
+
+     TgtATimeEach_Early_Mean(i,:) = nanmean(TgtATimeEach_Early ,1);
+     TgtATimeEach_Late_Mean(i,:) = nanmean(TgtATimeEach_Late ,1);
+
+     TgtATimeEach_Early_Sem(i,:) = nanstd(TgtATimeEach_Early ,[],1)/sqrt(min(10,floor(NumCTrial/2)));
+     TgtATimeEach_Late_Sem(i,:) = nanstd(TgtATimeEach_Late ,[],1)/sqrt(min(10,floor(NumCTrial/2)));
+
+     TgtATimeEach_Mean(i,:) = nanmean(TgtATimeEach,1);
+     
+
+     TgtATimeEach_Sem(i,:) = nanstd(TgtATimeEach ,[],1)/sqrt(NumCTrial);
+     
+
+     %Use the slope from the linear fitting to quantify the TA performance
+     X_fit = repmat([1:5],size(TgtATimeEach,1),1);
+     X_fit_l = reshape(X_fit,numel(X_fit),1);
+     Tgt_fit_l = reshape(TgtATimeEach,numel(TgtATimeEach),1);
+
+     mdl = fitlm(X_fit_l,Tgt_fit_l);
+     coef = mdl.Coefficients;
+
+     [r,p] = corrcoef(X_fit_l,Tgt_fit_l);
+
+     r_seq(i) = r(1,2);
+     p_seq(i) = p(1,2);
+
+
+
+
+
+     %Calculate the correct rate for each set in one hyperset
+     %SuccessfulMat
+     
+     for j = 1:size(SuccessfulMat,2)
+
+         Correct_Seq_j = SuccessfulMat(sel,j)';
+         Correct_Seq_j=Correct_Seq_j(~isnan(Correct_Seq_j));
+
+         PlotEveryNTrial_j = 5;%Decrease for each step
+
+         CorrectRateNTrial_j = CalculateEveryNTrial(Correct_Seq_j,PlotEveryNTrial_j,PlotCorrectStep,tolerateN,0);
+
+         CR_Seq_j{i,j} = CorrectRateNTrial_j.data;
+         CR_Bin_j{i,j} = CorrectRateNTrial_j.time;
+
+         if find(CR_Seq_j{i,j}>=0.6,1)>0
+
+            TrialOver60_j(i,j) = CR_Bin_j{i,j}(find(CR_Seq_j{i,j}>=0.6,1));
+         else
+             TrialOver60_j(i,j) = NaN;
+         end
+
+
+         %Caculate the number of continous trials seq for each hypterset
+    NCountinousTrials_j = CalculateNumberOfContinousTrials(Correct_Seq_j,ErrorTol);
+    
+    NCon_j(i,j) = max(NCountinousTrials_j.conseq);
+
+     if NCon_j(i,j)==0
+        NTrialToCri_j(i,j)=NaN;
+        
+    else
+        if NCon_j(i,j) >= Cri
+            NTrialToCri_j(i,j) = NCountinousTrials_j.starttrial(find(NCountinousTrials_j.conseq >= Cri,1,'first'))-1;
+        else
+            %NTrialToCri(i) = NCountinousTrials.starttrial(find(NCountinousTrials.conseq == NCon(i),1,'last'))-1;   
+            NTrialToCri_j(i,j) = length( Correct_Seq_j);   
+        end
+     end
+
+
+     %Calculate the average target acquisition time for each set within a
+     %hyperset
+
+     TgtAcqusitionTime_j = TgtAcqusitionTime(sel & CorrectTrialIndex',j)';
+     %
+     
+     PlotEveryNTrial_CT_j =5;
+     output_at_tmp= CalculateEveryNTrial(TgtAcqusitionTime_j,PlotEveryNTrial_CT_j,PlotCorrectStep_CT,tolerateN_CT,0);
+     Hyperset_Ave_AT_j{i,j} =output_at_tmp.data;
+     
+
+     %}
+
+   
+     end
+
+     
+ 
+end
+
+if ShowFigureFlag
+    
+    
+    StartNO = 150;
+    FigureIndex = 1;
+    figtitlestr{FigureIndex}='CorrectRate_TargetAquisitionTime_DuringLearning';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[50,100, 1200,800],'Name',figtitlestr{FigureIndex});
+    subplot(2,2,1)
+    for i = 1:length(UniqueSeq)
+        plot(CR_Bin{i},CR_Seq{i}*100,'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+ 
+    end
+   
+    box off
+    xlabel(sprintf('Trial Index(Every %d trials)',PlotEveryNTrial));
+    ylabel('Correct Rate(%)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+    legend( SeqLegendwithC,'FontSize',20,'FontWeight','Bold');
+    
+    subplot(2,2,2)
+    %Number of trials to criterium
+    g = bar(NTrialToCri,'LineWidth',3);
+    g.FaceColor = 'flat';
+    g.CData = Color(1:length(UniqueSeq),:);
+
+    set(gca,'LineWidth',3);
+    xticks(1:length(UniqueSeq));
+    xticklabels(SeqLegend);
+    set(gca,'FontSize',15,'FontWeight','Bold')
+    xlabel('Hyperset')
+    ylabel(sprintf('NumberOfTrialsToCri%d',Cri));
+    box off;
+    
+    subplot(2,2,3)
+    %Completion time for each hyperset
+    for i = 1:length(UniqueSeq)
+        plot(HypersetCT{i}/1000,'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+ 
+    end
+   
+    box off
+    xlabel(sprintf('Trial Index(Every %d trials)',PlotEveryNTrial_CT));
+    ylabel('Time for completing one hyperset (s)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+    
+    subplot(2,2,4)
+    %Average the target acquisition time
+    for i = 1:length(UniqueSeq)
+        plot(Hyperset_Ave_AT{i},'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+ 
+    end
+   
+    box off
+    xlabel(sprintf('Trial Index(Every %d trials)',PlotEveryNTrial_CT));
+    ylabel('Time for ave tgt aquisition time (ms)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+   
+  %{
+    %% Figure 2: The tgt aquisition time for each set in a hyperset
+    StartNO = StartNO+1;
+    FigureIndex = FigureIndex + 1;
+    figtitlestr{FigureIndex}='TgtAcTime_EachSet';
+    
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+    
+    subplot(2,2,1)
+    for i = 1:length(UniqueSeq)
+        plot(TA_time_set(i,:),'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+ 
+    end
+   
+    box off
+    xlabel('SetOrder');
+    ylabel('TgtAcTime(ms)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+    
+  %}
+     StartNO = StartNO +1;
+    FigureIndex = FigureIndex +1;
+    figtitlestr{FigureIndex}='CorrectRate_TargetAquisitionTime_DuringLearning';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+    order= [5,20,230;
+            42,131,220;
+            42,203,220;
+            42,220,119;
+            161,220,42]/255;
+
+    for j =1:5
+        subplot(5,1,j);
+       
+       for i = 1:length(UniqueSeq)
+        plot(CR_Bin_j{i,j} ,CR_Seq_j{i,j},'-k','Color',Color(i,:),'LineWidth',3);
+        ylim([0,1]);
+
+        hold on
+       end
+       xlabel('Trial Number');
+       ylabel('Proportion of correct trials');
+       legend(string(UniqueSeq));
+       box off
+       title(sprintf('Order: %d',j));
+       set(gca,'FontSize',15);
+       
+
+
+    end
+
+     StartNO = StartNO +1;
+    FigureIndex = FigureIndex +1;
+    figtitlestr{FigureIndex}='TargetAqusitionTimeForEachOrder';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+
+
+
+     for i = 1:length(UniqueSeq)
+         subplot(ceil(length(UniqueSeq)/2),2,i);
+         
+         plot([1:5],TgtATimeEach_Mean(i,:));
+         hold on
+         errorbar([1:5],TgtATimeEach_Mean(i,:),TgtATimeEach_Sem(i,:),'-k','Color',Color(i,:),'LineWidth',3);
+
+
+         %{
+         plot([1:5],TgtATimeEach_Early_Mean(i,:));
+         hold on
+         errorbar([1:5],TgtATimeEach_Early_Mean(i,:),TgtATimeEach_Early_Sem(i,:),'-k','Color',Color(i,:),'LineWidth',3);
+
+         plot([1:5],TgtATimeEach_Late_Mean(i,:));
+         hold on
+         errorbar([1:5],TgtATimeEach_Late_Mean(i,:),TgtATimeEach_Late_Sem(i,:),'-k','Color',Color(i,:)/2,'LineWidth',3);
+         %}
+    xlabel('Order');
+    ylabel('Target Aqusition Time(ms)');
+    box off;
+    title(sprintf('Seq: %d',UniqueSeq(i)));
+    %legend({'Early','Late'});
+    set(gca,'LineWidth',3,'FontSize',15);
+
+     end
+
+
+      StartNO = StartNO +1;
+    FigureIndex = FigureIndex +1;
+    figtitlestr{FigureIndex}='DistLearning';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+     for i = 1:length(UniqueSeq)
+
+       %  if UniqueSeq(i) == 35 | UniqueSeq(i) == 2
+        plot(Dist_Seq_LC{i},'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+        plot(Dist_Seq_LC_Dis{i},'--ok','Color',Color(i,:),'LineWidth',3);
+        % end
+
+        
+ 
+    end
+        xlabel('Trial Number');
+       ylabel('Predictive Eye Distance');
+       legend(string(UniqueSeq));
+       box off
+      
+       set(gca,'FontSize',15);
+
+    % Dist_Seq_LC{i}
+
+  StartNO = StartNO +1;
+    FigureIndex = FigureIndex +1;
+    figtitlestr{FigureIndex}='DistLearning';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+     for i = 1:length(UniqueSeq)
+        plot(Angle_Seq_LC{i},'-ok','Color',Color(i,:),'LineWidth',3);
+        hold on
+        plot(Angle_Seq_LC_Dist{i},'--ok','Color',Color(i,:),'LineWidth',3);
+
+
+        
+ 
+    end
+        xlabel('Trial Number');
+       ylabel('Predictive Eye Angle Match');
+       legend(string(UniqueSeq));
+       box off
+      
+       set(gca,'FontSize',15);
+
+
+
+
+
+    if PlotExample 
+         StartNO = StartNO +1;
+    FigureIndex = FigureIndex+1;
+    figtitlestr{FigureIndex}='Example';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+    selSeq = UniqueSeq == ExampleSeq ;
+
+    subplot(1,2,1)
+
+    plot(CR_Bin{selSeq},CR_Seq{selSeq}*100,'-ok','Color',Color(selSeq,:),'LineWidth',3);
+
+
+    
+   
+    box off
+    xlabel(sprintf('Trial Index(Every %d trials)',PlotEveryNTrial));
+    ylabel('Correct Rate(%)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+    legend( SeqLegendwithC,'FontSize',20,'FontWeight','Bold');
+
+    subplot(1,2,2)
+    %Average the target acquisition time
+   
+    plot(Hyperset_Ave_AT{selSeq},'-ok','Color',Color(selSeq,:),'LineWidth',3);
+        
+   
+    box off
+    xlabel(sprintf('Trial Index(Every %d trials)',PlotEveryNTrial_CT));
+    ylabel('Time for ave tgt aquisition time (ms)');
+    set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+    %% Example predictive distance and angle
+     StartNO = StartNO +1;
+    FigureIndex = FigureIndex+1;
+    figtitlestr{FigureIndex}='DistanceChange';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[70,100, 1200,800],'Name',figtitlestr{FigureIndex});
+
+    selSeq = UniqueSeq == ExampleSeq ;
+
+    subplot(1,2,1)
+
+     plot(Dist_Seq_LC{ selSeq},'-or','LineWidth',3);
+     hold on
+        plot(Dist_Seq_LC_Dis{ selSeq},'-ob','LineWidth',3);
+        % end
+
+        
+ legend({'To Target','To distractor'});
+    
+        xlabel('Trial Number');
+       ylabel('Average distance to the targets');
+       %legend(string(ExampleSeq));
+       box off
+      
+       set(gca,'LineWidth',3,'FontWeight','Bold','FontSize',15);
+
+        subplot(1,2,2)
+
+     plot(Angle_Seq_LC{ selSeq},'-or','LineWidth',3);
+     hold on
+        plot(Angle_Seq_LC_Dist{ selSeq},'-ob','LineWidth',3);
+        % end
+
+      
+    
+        xlabel('Trial Number');
+       ylabel('Average angle difference to the targets');
+      % legend(string(ExampleSeq));
+       box off
+      
+       set(gca,'LineWidth',3,'FontWeight','Bold','FontSize',15);
+       
+
+
+
+
+    end
+
+    
+
+
+
+    %% Next figure, change of target aqusition time for each set in each hyperset within each training session
+
+     StartNO = StartNO +1;
+    FigureIndex = FigureIndex +1;
+    figtitlestr{FigureIndex}='TargetAquisitionTime_DuringLearningForEachSetInEachHyperset';
+    fig{FigureIndex}=PrepareFigure(StartNO,'w',[90,100, 1200,800],'Name',figtitlestr{FigureIndex});
+    order= [5,20,230;
+            42,131,220;
+            42,203,220;
+            42,220,119;
+            161,220,42]/255;
+    for i = 1:length(UniqueSeq)
+        subplot(length(UniqueSeq),1,i);
+        for j = 1:5
+            plot(Hyperset_Ave_AT_j{i,j},'-*r','color',order(j,:),'LineWidth',3);
+            hold on
+        end
+        title(sprintf('Seq%d',UniqueSeq(i)));
+        xlabel('TrialNum');
+        ylabel('Ave tgt acq time(ms)');
+        if i == 1
+            legend({'Set1','Set2','Set3','Set4','Set5'});
+        end
+    end
+
+
+
+    
+end %End of the if show figure 
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Output to
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%files%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Setup output directory
+Workingdirectory=pwd;
+
+
+%Set up output path according to the system
+OperationSystem = computer;%Get the operation system information
+
+if strcmp(OperationSystem(1:3),"PCW")  
+    %PC
+     MarkerFolder='DataHub';
+elseif strcmp(OperationSystem(1:3),"MAC")  
+    %Mac
+     MarkerFolder='DataAnalysis';
+ end
+Flag=strfind(Workingdirectory,MarkerFolder);
+BasicDirectory=Workingdirectory(1:Flag+length(MarkerFolder));
+
+%%%%%%%%%%%Export data%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%OutputFolerName='ForagingTask';
+OutPath=strcat(BasicDirectory,'Results',BasicDirectory(end));%,OutputFolerName);
+if ~exist(OutPath)
+    mkdir(OutPath)
+end
+cd(OutPath);
+FileName=Data.FileName;
+FileName=FileName(1:end-4);
+
+
+%Get File Information
+num = regexp(FileName, '\d+', 'match');
+RecordDateOriginal=cell2mat(num(1));
+
+NeuronNum=cell2mat(num(2));
+ChannelNum=0;%Only for behavior
+
+
+%To get the monkey name
+RemainFiles=erase(FileName,RecordDateOriginal);
+Delimiter=find(isstrprop(RemainFiles,'upper')==1);
+MonkeyName=RemainFiles(Delimiter(1):Delimiter(2)-1);
+
+
+%Output file name
+OutputFileName=sprintf('%s_%s_N%s_C%s.mat',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+OutputFigureName=sprintf('%s_%s_N%s_C%s',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
+
+%Store figures in common folders
+%{
+ProtocolMarker = 'MemorySac';
+FigurePath=strcat(BasicDirectory,'Figures',BasicDirectory(end),ProtocolMarker,BasicDirectory(end));%,OutputFolerName);
+if ~exist(FigurePath)
+    mkdir(FigurePath)
+end
+
+if ShowFigureFlag & OutputFlag
+    %for i=1:length(fig)
+    for i=1:1
+        cd(FigurePath);
+        OutputFigureNameFig=[];
+        titlestr=figtitlestr{i};
+        FolderName=titlestr;
+         if ~exist(FolderName,'dir')
+          mkdir(FolderName);
+         end
+          cd(FolderName);
+    
+        OutputFigureNameFig=strcat(OutputFigureName,'.jpg');
+        saveas(fig{i},OutputFigureNameFig);
+        
+        
+    end
+        
+    
+    disp('Figures have been exported to the common folder');
+    
+end
+
+%}
+
+%
+
+
+ExistFlag=0;
+%Load the old file if exist
+if exist(OutputFileName)
+
+    load(OutputFileName);
+    %Load OutputData into the memory
+    if isfield(OutputData,'SequenceLearning')
+    ExistFlag=1;
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%OutputData For current analysis
+OutputData_New=[];
+
+OutputData_New.SequenceLearning.TrialType='GoodTrials';
+%%%%%%%%%Save overall scene response characteristics%%%%%%%%%%%%%%%%%%%%%%%
+%Organize the data
+NameStr={'UniqueSeq','CorrectRate','TgtAcTime','TotalCompleteTrial','CorrectTrial','NTrialToCri','TrialOver60',...
+    'LR_Seq','LR_Bin',...
+    'TrialOver60_j','NTrialToCri_j',...
+    'HypersetCTSeq','HypersetCT_ave','Hyperset_Ave_AT','Hyperset_Seq_Ave',...
+    'Hyperset_Ave_AT_j',...
+    'r_seq','p_seq','TgtATimeEach_Mean','TgtATimeEach_Sem','Dist_Seq_Mean','Dist_Seq_Sem','Angle_Seq_Mean','Angle_Seq_Sem',...
+    'Dist_Seq_Dis_Mean','Dist_Seq_Dis_Sem','Angle_Seq_Dis_Mean','Angle_Seq_Dis_Sem'
+
+    
+    
+};
+
+DataLib={UniqueSeq,CorrectRate,TgtAcTime,TotalCompleteTrial,CorrectTrial,NTrialToCri,TrialOver60,...
+    CR_Seq,CR_Bin,...
+    TrialOver60_j,NTrialToCri_j,...
+    HypersetCT,HypersetCT_ave,Hyperset_Ave_AT,Hyperset_Seq_Ave,...
+    Hyperset_Ave_AT_j,... 
+    r_seq,p_seq,TgtATimeEach_Mean,TgtATimeEach_Sem,Dist_Seq_Mean,Dist_Seq_Sem,Angle_Seq_Mean,Angle_Seq_Sem,...
+    Dist_Seq_Dis_Mean,Dist_Seq_Dis_Sem,Angle_Seq_Dis_Mean,Angle_Seq_Dis_Sem
+};
+
+
+
+
+DataStamp=containers.Map(NameStr,DataLib);
+
+
+
+
+
+OutputData_New.SequenceLearning.Task=TaskType;
+OutputData_New.SequenceLearning.TaskCode=TaskCode;
+OutputData_New.SequenceLearning.DataStamp=DataStamp;
+
+
+%Store figures
+if ShowFigureFlag
+   
+    %OutputData_New.SceneTuning.Figures={fig99,fig100,fig101,fig102};
+    %Output figures in a folder;
+    FolderName=OutputFigureName;
+    if ~exist(FolderName,'dir')
+        mkdir(FolderName);
+    end
+    cd(FolderName);
+    
+    TotalFigure=length(fig);
+    
+    for j=1:TotalFigure
+        
+        OutputFigureName=strcat(FolderName,figtitlestr{j},'.jpg');
+        if ~isempty(fig{j})
+        saveas(fig{j},OutputFigureName);
+        end
+        
+        
+    end
+
+    disp('Figures have been exported to the neuron folder');
+
+end
+
+if ExistFlag
+%Compare the old one with the new one
+Task_Old=OutputData.SequenceLearning.TaskCode;
+
+     if Task_Old~=TaskCode
+        %Not the same task, add the new dataset into the old one
+        OutputData.SequenceLearning(numel(OutputData.SequenceLearning)+1)=OutputData_New.SequenceLearning;
+     else
+         %If the same task,the same protocol,replace the old one with the new one
+         
+         OutputData.SequenceLearning=OutputData_New.SequenceLearning;
+         
+    
+    
+     end
+else
+    %Output the current file
+   OutputData.SequenceLearning=OutputData_New.SequenceLearning; 
+end
+
+
+
+if OutputFlag
+    cd(OutPath);
+    save(OutputFileName,'OutputData');
+    disp('Data Exported');
+else
+    disp('No data export');
+end  
+
+%}
+
+
+
+
+
+
+
+end
+
+function code = SeqCode(loc);
+TrialIndex = loc(:,1);
+LocLib = [270,0,90,180,315,45,135,225];
+CodeLib = [1:length(LocLib)];
+
+code = loc;
+    for i = LocLib
+        code(abs(code- i)<0.01) = CodeLib(LocLib == i);
+    
+    end
+
+code_end = zeros(size(code,1),1);
+    for i = 1:size(code,2)
+        code_end = code_end + code(:,i)*10^(size(code,2)-i);
+    end
+
+code = [TrialIndex,code,code_end];
+
+
+end
+
+
+
+

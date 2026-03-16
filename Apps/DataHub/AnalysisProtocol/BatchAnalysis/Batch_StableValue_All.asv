@@ -1,0 +1,2463 @@
+function Batch_StableValue_All(Data,  StartFile, EndFile,ShowFigureFlag,OutputFlag)
+BatchFileName=Data.BatchFileName;
+%Batch data file path
+FilesName=Data.ResultFilePath(StartFile: EndFile);
+RecordDate=Data.RecordDate(StartFile: EndFile);
+FileNum=EndFile-StartFile+1;
+
+%Load file
+
+
+FilesName_Each=Data.FileName;
+ChannelID=Data.ChannelNumber;
+
+index =1;
+
+ChannelFull=[];
+
+FileIndex=[];
+AbsoluteIndex = [];
+
+
+for i=1:length(FilesName)
+  clear OutputData;
+   ChannelFull=[ChannelFull,ChannelID(i,1):ChannelID(i,2)];
+
+    for j = 1:length(FilesName{i})
+
+       
+  
+     load(FilesName{i}{j});
+
+     
+     
+     OutputDataTemp=OutputData;
+
+     FilesNameAll{index}=FilesName_Each{i};
+
+     AbsoluteIndex(index)=index;
+%{
+     if ismember(FilesNameAll{index},{'Robin062723FRACSAC1'}) & ChannelFull(index)==25
+         keyboard
+     end
+
+%}
+     if index == 1
+         FileIndex(index) = 1;
+
+     else
+         if ~strcmp(FilesNameAll{index},FilesNameAll{index-1})
+             FileIndex(index) = FileIndex(index-1)+1;
+         else
+             FileIndex(index) = FileIndex(index-1);
+
+         end
+     end
+
+
+
+
+
+
+ 
+
+
+      %% %Stable Value
+    % if isfield(OutputData,'StableValue')
+
+          StableValueIndex(index) = 1;
+
+          Data =OutputData.StableValue(1).DataStamp;
+
+
+         p_Tgt_RF_stable(index) = Data('p_Tgt_RF');
+         if isempty(Data('p_Tgt_nonRF'))
+              p_Tgt_nonRF_stable(index) = NaN;
+         else
+             
+             p_Tgt_nonRF_stable(index) = Data('p_Tgt_nonRF');
+         end
+
+       %  Tgt_Good_RF_stable(index) = Data('Tgt_Good_RF');
+
+
+      %  PreTgtGood_RF(index) = Data('PreTgtGood_RF');
+      %  PreTgtBad_RF(index) = Data('PreTgtBad_RF');
+        p_Sac_RF_stable(index) = Data('p_Sac_RF');
+        if isempty(Data('p_Sac_nonRF'))
+            p_Sac_nonRF_stable(index)=NaN;
+
+        else
+            p_Sac_nonRF_stable(index) = Data('p_Sac_nonRF');
+        end
+
+%Basic visual responses
+         p_Vis_RF_stable(index) = Data('p_Vis_RF');
+         if isempty(Data('p_Vis_nonRF'))
+              p_Vis_nonRF_stable(index) = NaN;
+         else
+             
+             p_Vis_nonRF_stable(index) = Data('p_Vis_nonRF');
+         end
+
+         VisDiff_RF_stable(index)=Data('VisDiff_RF');
+         
+        
+%
+        PSTH_TgtOn_Prefer_RF_stable{index} = Data('PSTH_TgtOn_Prefer_RF_z');
+        PSTH_TgtOn_nonPrefer_RF_stable{index} = Data('PSTH_TgtOn_nonPrefer_RF_z');
+        PSTH_TgtOn_Prefer_nonRF_stable{index} = Data('PSTH_TgtOn_Prefer_nonRF_z');
+        PSTH_TgtOn_nonPrefer_nonRF_stable{index} = Data('PSTH_TgtOn_nonPrefer_nonRF_z');
+
+        PSTH_SacOn_Prefer_RF_stable{index} = Data('PSTH_SacOn_Prefer_RF_z');
+        PSTH_SacOn_nonPrefer_RF_stable{index} = Data('PSTH_SacOn_nonPrefer_RF_z');
+        PSTH_SacOn_Prefer_nonRF_stable{index} = Data('PSTH_SacOn_Prefer_nonRF_z');
+        PSTH_SacOn_nonPrefer_nonRF_stable{index} = Data('PSTH_SacOn_nonPrefer_nonRF_z');
+
+%
+
+        PSTH_TgtOn_Good_RF_stable{index} = Data('PSTH_TgtOn_Good_RF_z');
+        PSTH_TgtOn_Bad_RF_stable{index} = Data('PSTH_TgtOn_Bad_RF_z');
+        PSTH_TgtOn_Good_nonRF_stable{index} = Data('PSTH_TgtOn_Good_nonRF_z');
+        PSTH_TgtOn_Bad_nonRF_stable{index} = Data('PSTH_TgtOn_Bad_nonRF_z');
+
+        PSTH_SacOn_Good_RF_stable{index} = Data('PSTH_SacOn_Good_RF_z');
+        PSTH_SacOn_Bad_RF_stable{index} = Data('PSTH_SacOn_Bad_RF_z');
+        PSTH_SacOn_Good_nonRF_stable{index} = Data('PSTH_SacOn_Good_nonRF_z');
+        PSTH_SacOn_Bad_nonRF_stable{index} = Data('PSTH_SacOn_Bad_nonRF_z');
+
+
+
+        PSTH_Time_TgtOn_stable = Data('Time_TgtOn');
+        PSTH_Time_SacOn_stable = Data('Time_SacOn');
+
+      
+
+
+
+
+
+%}
+        psth_rawtgt_good_RF = Data('PSTH_TgtOn_Good_RF');
+        psth_rawtgt_bad_RF = Data('PSTH_TgtOn_Bad_RF');
+
+        psth_rawsac_good_RF = Data('PSTH_SacOn_Good_RF');
+        psth_rawsac_bad_RF = Data('PSTH_SacOn_Bad_RF');
+
+        psth_rawtgt_good_NonRF = Data('PSTH_TgtOn_Good_nonRF');
+        psth_rawtgt_bad_NonRF = Data('PSTH_TgtOn_Bad_nonRF');
+
+        psth_rawsac_good_NonRF = Data('PSTH_SacOn_Good_nonRF');
+        psth_rawsac_bad_NonRF = Data('PSTH_SacOn_Bad_nonRF');
+
+        FR_Mean_stable(index) = mean([nanmean(psth_rawtgt_good_RF),nanmean(psth_rawtgt_bad_RF),nanmean(psth_rawsac_good_RF),nanmean(psth_rawsac_bad_RF),nanmean(psth_rawtgt_good_NonRF),nanmean(psth_rawtgt_bad_NonRF),nanmean(psth_rawsac_good_NonRF),nanmean(psth_rawsac_bad_NonRF)]);
+
+
+        
+
+       
+
+
+        %{
+        PSTH_TgtOn_Good_RF_stable{index} = Data('PSTH_TgtOn_Good_RF');
+        PSTH_TgtOn_Bad_RF_stable{index} = Data('PSTH_TgtOn_Bad_RF');
+        PSTH_TgtOn_Good_nonRF_stable{index} = Data('PSTH_TgtOn_Good_nonRF');
+        PSTH_TgtOn_Bad_nonRF_stable{index} = Data('PSTH_TgtOn_Bad_nonRF');
+
+        PSTH_SacOn_Good_RF_stable{index} = Data('PSTH_SacOn_Good_RF');
+        PSTH_SacOn_Bad_RF_stable{index} = Data('PSTH_SacOn_Bad_RF');
+        PSTH_SacOn_Good_nonRF_stable{index} = Data('PSTH_SacOn_Good_nonRF');
+        PSTH_SacOn_Bad_nonRF_stable{index} = Data('PSTH_SacOn_Bad_nonRF');
+        %}
+
+        AUCPSTH_TgtOn_Value_RF_stable{index} = Data('AUCPSTH_TgtOn_Value_RF');
+        
+        AUCPSTH_TgtOn_Value_nonRF_stable{index} = Data('AUCPSTH_TgtOn_Value_nonRF');
+        
+
+        AUCPSTH_SacOn_Value_RF_stable{index} = Data('AUCPSTH_SacOn_Value_RF');
+        
+        AUCPSTH_SacOn_Values_nonRF_stable{index} = Data('AUCPSTH_SacOn_Value_nonRF');
+        
+
+
+
+        p_Vis_RF(index) = Data('p_Vis_RF');
+        VisDiff_RF(index) = Data('VisDiff_RF');
+        p_Vis_nonRF(index) = Data('p_Vis_nonRF');
+        VisDiff_nonRF(index) = Data('VisDiff_nonRF');
+
+        p_pureSac_RF(index) = Data('p_pureSac_RF');
+        pureSacDiff_RF(index) = Data('pureSacDiff_RF');
+        p_pureSac_nonRF(index) = Data('p_pureSac_nonRF');
+        pureSacDiff_nonRF(index) = Data('pureSacDiff_nonRF');
+
+        hPSTH_TgtOn_Value_RF{index}=Data('hPSTH_TgtOn_Value_RF');
+
+        
+
+        tmp = hPSTH_TgtOn_Value_RF{index};
+        continuousBin = 5;
+        Latency_Value_Stable(index)=NaN;
+        tmp_time = NaN;
+
+        for b = 1:length(hPSTH_TgtOn_Value_RF{index})
+            if sum(tmp(b:min(b+continuousBin-1,length(tmp))))==continuousBin
+                if isnan(Latency_Value_Stable(index)) 
+                    if  PSTH_Time_TgtOn_stable(b)<0
+                        tmp_time = PSTH_Time_TgtOn_stable(b);
+                    else
+                        Latency_Value_Stable(index) = PSTH_Time_TgtOn_stable(b);
+                    end
+                end
+            end
+        end
+
+        if isnan(Latency_Value_Stable(index))
+            Latency_Value_Stable(index)=tmp_time;
+        end
+
+
+ %Average responses from 150 to 250
+
+ ValueWindow = [80,200]; % SC
+% ValueWindow = [100,200]; % FEF
+
+
+        Good_stable_RF = psth_rawtgt_good_RF(PSTH_Time_TgtOn_stable>=ValueWindow(1) & PSTH_Time_TgtOn_stable<=ValueWindow(2));
+        Bad_stable_RF = psth_rawtgt_bad_RF(PSTH_Time_TgtOn_stable>=ValueWindow(1) & PSTH_Time_TgtOn_stable<=ValueWindow(2));
+
+        [h,p]=ttest2(Good_stable_RF,Bad_stable_RF);
+        Value_Stable_RF(index) = h;
+        Value_Stable_RF_Diff(index) = mean(Good_stable_RF)-mean(Bad_stable_RF);
+        Value_Stable_RF_ROC(index) = rocN(Good_stable_RF,Bad_stable_RF);
+        %p_ROC_stable(index) = p;
+
+        
+
+
+
+
+        hPSTH_TgtOn_Good_RF{index}=Data('hPSTH_TgtOn_Good_RF');
+        hPSTH_TgtOn_Bad_RF{index}=Data('hPSTH_TgtOn_Bad_RF');
+        
+
+        hPSTH_SacOn_Value_RF{index}=Data('hPSTH_SacOn_Value_RF');
+        hPSTH_SacOn_Good_RF{index}=Data('hPSTH_SacOn_Good_RF');
+        hPSTH_SacOn_Bad_RF{index}=Data('hPSTH_SacOn_Bad_RF');
+
+        
+        hPSTH_TgtOn_Value_nonRF{index}=Data('hPSTH_TgtOn_Value_nonRF');
+        hPSTH_TgtOn_Good_nonRF{index}=Data('hPSTH_TgtOn_Good_nonRF');
+        hPSTH_TgtOn_Bad_nonRF{index}=Data('hPSTH_TgtOn_Bad_nonRF');
+
+        hPSTH_SacOn_Value_nonRF{index}=Data('hPSTH_SacOn_Value_nonRF');
+        hPSTH_SacOn_Good_nonRF{index}=Data('hPSTH_SacOn_Good_nonRF');
+        hPSTH_SacOn_Bad_nonRF{index}=Data('hPSTH_SacOn_Bad_nonRF');
+        
+
+%Select out neurons which shows significant responses
+%Select out neurons which shows significant value difference from 100 to 300
+%SelectTime_Stable=[80,200];%SC
+%SelectTime_Stable=[100,200];%FEF
+ tmp = hPSTH_TgtOn_Value_RF{index};
+
+hInterval = tmp(PSTH_Time_TgtOn_stable>=ValueWindow(1) & PSTH_Time_TgtOn_stable<=ValueWindow(2));
+if sum(hInterval)>5
+    Value_Stable_RF_Prop_Sig(index) = 1;
+else
+    Value_Stable_RF_Prop_Sig(index) = 0;
+
+end
+
+        
+
+        TgtGood_RF_Stable(index) = Data('TgtGood_RF');
+        TgtBad_RF_Stable(index) = Data('TgtBad_RF');
+
+         TgtGood_nonRF_Stable(index) = Data('TgtGood_nonRF');
+        TgtBad_nonRF_Stable(index) = Data('TgtBad_nonRF');
+
+        SacGood_RF_Stable(index) = Data('SacGood_RF');
+        SacBad_RF_Stable(index) = Data('SacBad_RF');
+
+         SacGood_nonRF_Stable(index) = Data('SacGood_nonRF');
+        SacBad_nonRF_Stable(index) = Data('SacBad_nonRF');
+
+        
+       AUC_Stable_RF(index) = Data('TgtAUC_RF');
+       pAUC_Stable_RF(index) = Data('p_AUC_Tgt_RF');
+
+       if isempty(Data('TgtAUC_nonRF'))
+           AUC_Stable_nonRF(index) =NaN;
+           pAUC_Stable_nonRF(index)=NaN;
+
+       else
+            AUC_Stable_nonRF(index) = Data('TgtAUC_nonRF');
+             pAUC_Stable_nonRF(index) = Data('p_AUC_Tgt_nonRF ');
+       end
+
+        
+       
+  
+
+p_Response_interval_RF(index,:)=Data('p_response_interval_RF');
+TgtAUC_interval_RF(index,:) = Data('TgtAUC_interval_RF');
+
+if isempty(Data('p_response_interval_nonRF'))
+    p_Response_interval_nonRF(index,:) = NaN*ones(1,4);
+    TgtAUC_interval_nonRF(index,:) = NaN*ones(1,4);
+
+else
+    p_Response_interval_nonRF(index,:) = Data('p_response_interval_nonRF');
+    TgtAUC_interval_nonRF(index,:)=Data('TgtAUC_interval_nonRF');
+
+end
+
+        Value_Vis_RF(index) = sign(TgtGood_RF_Stable(index)-TgtBad_RF_Stable(index));
+
+        Value_Vis_nonRF(index) = sign(TgtGood_nonRF_Stable(index)-TgtBad_nonRF_Stable(index));
+
+        Value_Sac_RF(index) = sign(SacGood_RF_Stable(index)-SacBad_RF_Stable(index));
+
+        Value_Sac_nonRF(index) = sign(SacGood_nonRF_Stable(index)-SacBad_nonRF_Stable(index));
+
+
+
+
+%Free Viewing Task
+%{
+if isfield(OutputData,'FreeViewNeural')  & ~ismember(FilesNameAll(index),'Robin060923FRACSAC1')
+    clear Data;
+      Data =OutputData.FreeViewNeural.DataStamp;
+      OptoIndex(index) = 1;
+%
+
+    PSTH_Stim_Norm{index} = Data('PSTH_Stim_Mean_norm');
+
+
+     PSTH_Control_Norm{index} = Data('PSTH_Control_Mean_norm');
+     PSTH_Stim_Mean_z{index} = Data('PSTH_Stim_Mean_z');
+
+   %   PSTH_Stim_Mean_z{index} = Data('PSTH_Stim_Mean_z');%Use the z scored ones
+   %  PSTH_Control_Mean_z{index} = Data('PSTH_Control_Mean_z');%Use the z scored ones
+
+  %    PSTH_Stim_Norm{index} = Data('PSTH_Stim_Mean_z');
+  %   PSTH_Control_Norm{index} = Data('PSTH_Control_Mean_z');
+
+      PSTH_Stim_Mean{index} = Data('PSTH_Stim_Mean');
+     PSTH_Control_Mean{index} = Data('PSTH_Control_Mean');
+
+     FR_Mean_Video(index) = Data('FR_Mean');
+
+     p_StimControl(index) = Data('p_StimControl');
+
+     p_Cri20(index) = Data('p_cri20');
+     p_Cri50(index) = Data('p_cri50');
+     Latency2(index) = Data('Latency2');
+
+     PSTH_Stim_Norm2{index} = Data('psth_stim_normed2');
+
+
+     
+     AS(index) = Data('AcDur');
+     Latency(index) = Data('ResponseLatency');
+%     p_AS(index) = Data('Ac_p');
+     PMS(index) = Data('PostModulationStrength');
+     PMS_p(index) = Data('PostModulation_p');
+     SM(index) = Data('StimModulation');
+     SM_p(index) = Data('StimModulation_p');
+   
+     PSTH_First{index} = Data('PSTH_Stim_Mean_First_z');
+     PSTH_Second{index} = Data('PSTH_Stim_Mean_Second_z');
+
+     p_whole_cri50{index} = Data('p_whole_cri50');
+
+
+
+     
+
+
+     AS_First(index) = Data('AS_First');
+     AS_Second(index) = Data('AS_Second');
+
+     PSTH_Opto_Time = Data('PSTH_Time');
+else
+     OptoIndex(index) = 0;
+     PSTH_Stim_Norm{index} = NaN;
+     PSTH_Control_Norm{index} = NaN;
+     PSTH_Stim_Mean_z{index} = NaN;
+
+   %   PSTH_Stim_Mean_z{index} = Data('PSTH_Stim_Mean_z');%Use the z scored ones
+   %  PSTH_Control_Mean_z{index} = Data('PSTH_Control_Mean_z');%Use the z scored ones
+
+  %    PSTH_Stim_Norm{index} = Data('PSTH_Stim_Mean_z');
+  %   PSTH_Control_Norm{index} = Data('PSTH_Control_Mean_z');
+
+      PSTH_Stim_Mean{index} = NaN;
+     PSTH_Control_Mean{index} =NaN;
+
+     FR_Mean_Video(index) = NaN;
+
+     p_StimControl(index) = NaN;
+
+     p_Cri20(index) = NaN;
+     p_Cri50(index) = NaN;
+     Latency2(index) = NaN;
+
+     PSTH_Stim_Norm2{index} = NaN;
+
+
+     
+     AS(index) = NaN;
+     Latency(index) = NaN;
+%     p_AS(index) = Data('Ac_p');
+     PMS(index) = NaN;
+     PMS_p(index) = NaN;
+     SM(index) = NaN;
+     SM_p(index) = NaN;
+   
+     PSTH_First{index} = NaN;
+     PSTH_Second{index} = NaN;
+
+     p_whole_cri50{index} = NaN;
+
+
+
+
+     
+
+
+     AS_First(index) = NaN;
+     AS_Second(index) = NaN;
+
+  
+
+
+      
+end
+%}
+%% For one DR task
+
+if isfield(OutputData,'OneDR')
+
+    OneDRIndex(index) = 1;
+clear Data;
+     Data =OutputData.OneDR.DataStamp;
+
+     Tgt_Good_RF_oneDR(index) = Data('TgtGoodRF');
+     Tgt_Bad_RF_oneDR(index) = Data('TgtBad_RF');   
+     p_Tgt_RF_oneDR(index) = Data('p_Tgt_RF');
+
+
+
+
+
+
+     PreTgtGood_RF_oneDR(index) = Data('PreTgtGood_RF');
+     PreTgtBad_RF_oneDR(index) = Data('PreTgtBad_RF');
+     p_preTgt_RF_oneDR(index) = Data('p_preTgt_RF');
+
+     p_Sac_RF_oneDR(index) = Data('p_Sac_RF');
+
+      Sac_Good_RF_oneDR(index) = Data('SacGood_RF');
+     Sac_Bad_RF_oneDR(index) = Data('SacBad_RF');   
+    
+%å
+
+      PSTH_Good_TgtOn_RF_oneDR{index} = Data('PSTH_Good_TgtOn_RF_z');
+     PSTH_Bad_TgtOn_RF_oneDR{index} = Data('PSTH_Bad_TgtOn_RF_z');
+     PSTH_Good_TgtOn_nonRF_oneDR{index} = Data('PSTH_Good_TgtOn_nonRF_z');
+     PSTH_Bad_TgtOn_nonRF_oneDR{index} = Data('PSTH_Bad_TgtOn_nonRF_z');
+
+     PSTH_SacGood_nonRF_oneDR{index} = Data('PSTH_SacGood_nonRF_z');
+     PSTH_SacBad_nonRF_oneDR{index} = Data('PSTH_SacBad_nonRF_z');
+     PSTH_SacGood_RF_oneDR{index} = Data('PSTH_SacGood_RF_z');
+     PSTH_SacBad_RF_oneDR{index} = Data('PSTH_SacBad_RF_z');
+%}
+        psth_rawtgt_good_RF = Data('PSTH_Good_TgtOn_RF');
+        psth_rawtgt_bad_RF = Data('PSTH_Bad_TgtOn_RF');
+
+        psth_rawsac_good_RF = Data('PSTH_SacGood_RF');
+        psth_rawsac_bad_RF = Data('PSTH_SacBad_RF');
+
+        psth_rawtgt_good_NonRF = Data('PSTH_Good_TgtOn_nonRF');
+        psth_rawtgt_bad_NonRF = Data('PSTH_Bad_TgtOn_nonRF');
+
+        psth_rawsac_good_NonRF = Data('PSTH_SacGood_nonRF');
+        psth_rawsac_bad_NonRF = Data('PSTH_SacBad_nonRF');
+
+        FR_Mean_oneDR(index) = mean([nanmean(psth_rawtgt_good_RF),nanmean(psth_rawtgt_bad_RF),nanmean(psth_rawsac_good_RF),nanmean(psth_rawsac_bad_RF),nanmean(psth_rawtgt_good_NonRF),nanmean(psth_rawtgt_bad_NonRF),nanmean(psth_rawsac_good_NonRF),nanmean(psth_rawsac_bad_NonRF)]);
+
+
+%{
+      PSTH_Good_TgtOn_RF_oneDR{index} = Data('PSTH_Good_TgtOn_RF');
+     PSTH_Bad_TgtOn_RF_oneDR{index} = Data('PSTH_Bad_TgtOn_RF');
+     PSTH_Good_TgtOn_nonRF_oneDR{index} = Data('PSTH_Good_TgtOn_nonRF');
+     PSTH_Bad_TgtOn_nonRF_oneDR{index} = Data('PSTH_Bad_TgtOn_nonRF');
+
+     PSTH_SacGood_nonRF_oneDR{index} = Data('PSTH_SacGood_nonRF');
+     PSTH_SacBad_nonRF_oneDR{index} = Data('PSTH_SacBad_nonRF');
+     PSTH_SacGood_RF_oneDR{index} = Data('PSTH_SacGood_RF');
+     PSTH_SacBad_RF_oneDR{index} = Data('PSTH_SacBad_RF');
+%}
+     PSTH_Time_TgtOn_OneDR = Data('Time_TgtOn');
+     PSTH_Time_SacOn_OneDR = Data('Time_SacOn');
+
+    
+
+        AUCPSTH_TgtOn_Value_RF_oneDR{index} = Data('AUCPSTH_TgtOn_Value_RF');
+        
+        AUCPSTH_TgtOn_Value_nonRF_oneDR{index} = Data('AUCPSTH_TgtOn_Value_nonRF');
+        
+
+        AUCPSTH_SacOn_Value_RF_oneDR{index} = Data('AUCPSTH_SacOn_Value_RF');
+        
+        %AUCPSTH_SacOn_Values_nonRF_oneDR{index} = Data('AUCPSTH_SacOn_Value_nonRF');
+        
+
+
+     TgtGood_nonRF_oneDR(index) = Data('TgtGood_nonRF');
+     TgtBad_nonRF_oneDR(index) = Data('TgtBad_nonRF');
+     
+     PreTgtGood_nonRF_oneDR(index) = Data('PreTgtGood_nonRF');
+     PreTgtBad_nonRF_oneDR(index) = Data('PreTgtBad_nonRF');
+
+     
+     
+     SacGood_nonRF_oneDR(index) = Data('SacGood_nonRF');
+     SacBad_nonRF_oneDR(index) = Data('SacBad_nonRF');
+
+     
+     TgtAUC_nonRF_oneDR(index) = Data('TgtAUC_nonRF');
+
+     
+
+     SacAUC_nonRF_oneDR(index) = Data('SacAUC_nonRF');
+
+     TgtAUC_RF_oneDR(index) = Data('TgtAUC_RF');
+     SacAUC_RF_oneDR(index) = Data('SacAUC_RF');
+
+
+
+     p_AUC_Tgt_RF_oneDR(index) = Data('p_AUC_Tgt_RF');
+     p_AUC_Sac_RF_oneDR(index) = Data('p_AUC_Sac_RF');
+
+
+
+     
+
+     p_Tgt_nonRF_oneDR(index) = Data('p_Tgt_nonRF');
+
+     p_preTgt_nonRF_oneDR(index) = Data('p_preTgt_nonRF');
+     p_Sac_nonRF_oneDR(index) = Data('p_Sac_nonRF');
+     p_AUC_Tgt_nonRF_oneDR(index) = Data('p_AUC_Tgt_nonRF');
+     p_AUC_Sac_nonRF_oneDR(index) =Data('p_AUC_Sac_nonRF');
+
+      p_Vis_RF_oneDR(index) = Data('p_Vis_RF');
+        VisDiff_RF_oneDR(index) = Data('VisDiff_RF');
+        p_Vis_nonRF_oneDR(index) = Data('p_Vis_nonRF');
+        VisDiff_nonRF_oneDR(index) = Data('VisDiff_nonRF');
+
+        p_pureSac_RF_oneDR(index) = Data('p_pureSac_RF');
+        pureSacDiff_RF_oneDR(index) = Data('pureSacDiff_RF');
+        p_pureSac_nonRF_oneDR(index) = Data('p_pureSac_nonRF');
+        pureSacDiff_nonRF_oneDR(index) = Data('pureSacDiff_nonRF');
+
+        hPSTH_TgtOn_Value_RF_oneDR{index}=Data('hPSTH_TgtOn_Value_RF');
+        hPSTH_TgtOn_Good_RF_oneDR{index}=Data('hPSTH_TgtOn_Good_RF');
+        hPSTH_TgtOn_Bad_RF_oneDR{index}=Data('hPSTH_TgtOn_Bad_RF');
+        
+
+        hPSTH_SacOn_Value_RF_oneDR{index}=Data('hPSTH_SacOn_Value_RF');
+        hPSTH_SacOn_Good_RF_oneDR{index}=Data('hPSTH_SacOn_Good_RF');
+        hPSTH_SacOn_Bad_RF_oneDR{index}=Data('hPSTH_SacOn_Bad_RF');
+
+        
+        hPSTH_TgtOn_Value_nonRF_oneDR{index}=Data('hPSTH_TgtOn_Value_nonRF');
+        hPSTH_TgtOn_Good_nonRF_oneDR{index}=Data('hPSTH_TgtOn_Good_nonRF');
+        hPSTH_TgtOn_Bad_nonRF_oneDR{index}=Data('hPSTH_TgtOn_Bad_nonRF');
+
+        hPSTH_SacOn_Value_nonRF_oneDR{index}=Data('hPSTH_SacOn_Value_nonRF');
+        hPSTH_SacOn_Good_nonRF_oneDR{index}=Data('hPSTH_SacOn_Good_nonRF');
+        hPSTH_SacOn_Bad_nonRF_oneDR{index}=Data('hPSTH_SacOn_Bad_nonRF');
+
+        tmp = hPSTH_TgtOn_Value_RF_oneDR{index};
+        continuousBin = 5;
+        Latency_Value_OneDR(index)=NaN;
+
+        for b = 1:length(hPSTH_TgtOn_Value_RF_oneDR{index})
+            if sum(tmp(b:min(b+continuousBin-1,length(tmp))))==continuousBin
+                if isnan(Latency_Value_OneDR(index))
+                    Latency_Value_OneDR(index) = PSTH_Time_TgtOn_OneDR(b);
+                end
+            end
+        end
+        
+
+        %SelectTime_Location=[-100,100];
+        SelectTime_Location=[80,200];%SC %Only use this interval
+        tmp = hPSTH_TgtOn_Value_RF_oneDR{index};
+
+        SelectTime_Location2=[80,200]; %SC
+
+        %{
+         SelectTime_Location=[100,200];%FEF %Only use this interval
+        tmp = hPSTH_TgtOn_Value_RF_oneDR{index};
+
+        SelectTime_Location2=[100,200]; %FEF
+        %}
+
+        
+
+        
+
+        hInterval = tmp(PSTH_Time_TgtOn_OneDR>=SelectTime_Location(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location(2));
+        hInterval2 = tmp(PSTH_Time_TgtOn_OneDR>=SelectTime_Location2(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location2(2));
+if sum(hInterval)>5 || sum(hInterval2)>5
+    Value_OneDR_RF_Prop_Sig(index) = 1;
+else
+
+    Value_OneDR_RF_Prop_Sig(index) = 0;
+end
+
+if sum(hInterval)>5
+    Value_OneDR_RF_Sig_Base(index) = 1;
+else
+    Value_OneDR_RF_Sig_Base(index) = 0;
+end
+
+if sum(hInterval2)>5
+    Value_OneDR_RF_Sig_Target(index) = 1;
+else
+    Value_OneDR_RF_Sig_Target(index) = 0;
+end
+
+tmp_good = PSTH_Good_TgtOn_RF_oneDR{index};
+tmp_bad = PSTH_Bad_TgtOn_RF_oneDR{index};
+
+
+%Average responses from -100 to 100
+
+        Good_location_RF = psth_rawtgt_good_RF(PSTH_Time_TgtOn_OneDR>=SelectTime_Location(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location(2));
+        Bad_location_RF = psth_rawtgt_bad_RF(PSTH_Time_TgtOn_OneDR>=SelectTime_Location(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location(2));
+
+        [h,p]=ttest2(Good_location_RF,Bad_location_RF);
+        Value_Location_RF(index) = h;
+        Value_Location_RF_Diff(index) = mean(Good_location_RF)-mean(Bad_location_RF);
+        Value_Location_RF_ROC(index) = rocN(Good_location_RF,Bad_location_RF);
+
+%if p>0.05
+    %Average responses from 100 to 300
+      Good_location_RF2 = psth_rawtgt_good_RF(PSTH_Time_TgtOn_OneDR>=SelectTime_Location2(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location2(2));
+        Bad_location_RF2 = psth_rawtgt_bad_RF(PSTH_Time_TgtOn_OneDR>=SelectTime_Location2(1) & PSTH_Time_TgtOn_OneDR<=SelectTime_Location2(2));
+
+        [h,p]=ttest2(Good_location_RF2,Bad_location_RF2);
+        Value_Location_RF2(index) = h;
+        Value_Location_RF_Diff2(index) = mean(Good_location_RF2)-mean(Bad_location_RF2);
+        Value_Location_RF_ROC2(index) = rocN(Good_location_RF2,Bad_location_RF2);
+
+%end
+
+   % Value_Stable_RF_ROC(index) = rocN(Good_stable_RF,Bad_stable_RF);    
+
+
+     %Change into prefered psth
+     Diff_TgtOn_curr_oneDR = Tgt_Good_RF_oneDR(index) - Tgt_Bad_RF_oneDR(index);
+     Diff_preTgtOn_curr_oneDR = PreTgtGood_RF_oneDR(index) - PreTgtBad_RF_oneDR(index);
+
+     if p_Tgt_RF_oneDR(index) < 0.05
+         if Diff_TgtOn_curr_oneDR > 0
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+
+             
+
+
+
+
+         else
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+
+
+
+         end
+     elseif p_preTgt_RF_oneDR(index) < 0.05
+         if Diff_preTgtOn_curr_oneDR > 0
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+
+
+         else
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+
+
+
+         end
+     else
+         if Diff_preTgtOn_curr_oneDR > 0
+            PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+            PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+
+            PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+            PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+
+            PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+            PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+
+            PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+            PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+         else
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = PSTH_Bad_TgtOn_RF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = PSTH_Good_TgtOn_RF_oneDR{index};
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = PSTH_SacBad_RF_oneDR{index};
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = PSTH_SacGood_RF_oneDR{index};
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = PSTH_Bad_TgtOn_nonRF_oneDR{index};
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = PSTH_Good_TgtOn_nonRF_oneDR{index};
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = PSTH_SacBad_nonRF_oneDR{index};
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = PSTH_SacGood_nonRF_oneDR{index};
+             
+         end
+     end
+
+       Value_Vis_RF_OneDR(index) = sign(Tgt_Good_RF_oneDR(index)-Tgt_Bad_RF_oneDR(index));
+
+        %Value_Vis_nonRF_OneDR(index) = sign(Tgt_Good_nonRF_oneDR(index)-Tgt_Bad_nonRF_oneDR(index));
+    Value_Vis_nonRF_OneDR(index) =NaN;
+
+        Value_Sac_RF_OneDR(index) = sign(Sac_Good_RF_oneDR(index)-Sac_Bad_RF_oneDR(index));
+
+     %   Value_Sac_nonRF_OneDR(index) = sign(Sac_Good_nonRF(index)-Sac_Bad_nonRF(index));
+     Value_Sac_nonRF_OneDR(index) = NaN;
+
+       
+
+        
+else
+        OneDRIndex(index) = 0;
+
+        FR_Mean_oneDR(index) = NaN;
+
+        Value_Vis_RF_OneDR(index) = NaN;
+
+        Value_Vis_nonRF_OneDR(index) = NaN;
+
+        Value_Sac_RF_OneDR(index) =NaN;
+
+        Value_Sac_nonRF_OneDR(index) =NaN;
+
+
+     Tgt_Good_RF_oneDR(index) = NaN;
+     Tgt_Bad_RF_oneDR(index) = NaN;   
+     p_Tgt_RF_oneDR(index) =NaN;
+
+    
+Value_Location_RF_Diff2(index) = NaN;
+
+
+
+     PreTgtGood_RF_oneDR(index) = NaN;
+     PreTgtBad_RF_oneDR(index) =NaN;
+     p_preTgt_RF_oneDR(index) = NaN;
+
+     p_Sac_RF_oneDR(index) = NaN;
+
+      Sac_Good_RF_oneDR(index) = NaN;
+     Sac_Bad_RF_oneDR(index) =NaN;   
+    
+
+
+      PSTH_Good_TgtOn_RF_oneDR{index} =NaN*ones(1,160);
+     PSTH_Bad_TgtOn_RF_oneDR{index} = NaN*ones(1,160);
+     PSTH_Good_TgtOn_nonRF_oneDR{index} = NaN*ones(1,160);
+     PSTH_Bad_TgtOn_nonRF_oneDR{index} = NaN*ones(1,160);
+
+     AUCPSTH_TgtOn_Value_RF_oneDR{index} =NaN*ones(1,160);
+        
+        AUCPSTH_TgtOn_Value_nonRF_oneDR{index} = NaN*ones(1,160);
+        
+
+        AUCPSTH_SacOn_Value_RF_oneDR{index} =NaN*ones(1,160);
+        
+        AUCPSTH_SacOn_Values_nonRF_oneDR{index} = NaN*ones(1,160);
+        
+
+     PSTH_SacGood_nonRF_oneDR{index} = NaN;
+     PSTH_SacBad_nonRF_oneDR{index} = NaN;
+     PSTH_SacGood_RF_oneDR{index} = NaN;
+     PSTH_SacBad_RF_oneDR{index} = NaN;
+
+
+    
+
+
+     TgtGood_nonRF_oneDR(index) = NaN;
+     TgtBad_nonRF_oneDR(index) = NaN;
+     
+     PreTgtGood_nonRF_oneDR(index) = NaN;
+     PreTgtBad_nonRF_oneDR(index) = NaN;
+
+     
+     
+     SacGood_nonRF_oneDR(index) = NaN;
+     SacBad_nonRF_oneDR(index) = NaN;
+
+     
+     TgtAUC_nonRF_oneDR(index) = NaN;
+
+     
+
+     SacAUC_nonRF_oneDR(index) = NaN;
+
+     TgtAUC_RF_oneDR(index) = NaN;
+     SacAUC_RF_oneDR(index) = NaN;
+
+
+
+     p_AUC_Tgt_RF_oneDR(index) = NaN;
+     p_AUC_Sac_RF_oneDR(index) = NaN;
+
+
+
+     
+
+     p_Tgt_nonRF_oneDR(index) = NaN;
+
+     p_preTgt_nonRF_oneDR(index) = NaN;
+     p_Sac_nonRF_oneDR(index) = NaN;
+     p_AUC_Tgt_nonRF_oneDR(index) = NaN;
+     p_AUC_Sac_nonRF_oneDR(index) = NaN;
+
+
+
+     
+
+    
+             PSTH_Prefer_TgtOn_RF_oneDR{index} = NaN;
+             PSTH_nonPrefer_TgtOn_RF_oneDR{index} = NaN;
+
+             PSTH_Prefer_SacOn_RF_oneDR{index} = NaN;
+             PSTH_nonPrefer_SacOn_RF_oneDR{index} = NaN;
+
+             PSTH_Prefer_TgtOn_nonRF_oneDR{index} = NaN;
+             PSTH_nonPrefer_TgtOn_nonRF_oneDR{index} = NaN;
+
+             PSTH_Prefer_SacOn_nonRF_oneDR{index} = NaN;
+             PSTH_nonPrefer_SacOn_nonRF_oneDR{index} = NaN;
+
+              p_Vis_RF_oneDR(index) = NaN;
+        VisDiff_RF_oneDR(index) = NaN;
+        p_Vis_nonRF_oneDR(index) = NaN;
+        VisDiff_nonRF_oneDR(index) = NaN;
+
+        p_pureSac_RF_oneDR(index) = NaN;
+        pureSacDiff_RF_oneDR(index) = NaN;
+        p_pureSac_nonRF_oneDR(index) = NaN;
+        pureSacDiff_nonRF_oneDR(index) = NaN;
+
+        hPSTH_TgtOn_Value_RF_oneDR{index}=NaN;
+        hPSTH_TgtOn_Good_RF_oneDR{index}=NaN;
+        hPSTH_TgtOn_Bad_RF_oneDR{index}=NaN;
+        
+
+        hPSTH_SacOn_Value_RF_oneDR{index}=NaN;
+        hPSTH_SacOn_Good_RF_oneDR{index}=NaN;
+        hPSTH_SacOn_Bad_RF_oneDR{index}=NaN;
+
+        
+        hPSTH_TgtOn_Value_nonRF_oneDR{index}=NaN;
+        hPSTH_TgtOn_Good_nonRF_oneDR{index}=NaN;
+        hPSTH_TgtOn_Bad_nonRF_oneDR{index}=NaN;
+
+        hPSTH_SacOn_Value_nonRF_oneDR{index}=NaN;
+        hPSTH_SacOn_Good_nonRF_oneDR{index}=NaN;
+        hPSTH_SacOn_Bad_nonRF_oneDR{index}=NaN;
+        
+
+
+     
+       
+     
+
+       Value_Vis_RF_OneDR(index) = NaN;
+
+    %    Value_Vis_nonRF_OneDR(index) = sign(Tgt_Good_nonRF(index)-Tgt_Bad_nonRF(index));
+    Value_Vis_nonRF_OneDR(index) =NaN;
+
+        Value_Sac_RF_OneDR(index) = NaN;
+
+     %   Value_Sac_nonRF_OneDR(index) = sign(Sac_Good_nonRF(index)-Sac_Bad_nonRF(index));
+     Value_Sac_nonRF_OneDR(index) = NaN;
+
+
+        Value_Location_RF(index) = NaN;
+        Value_Location_RF2(index) = NaN;
+        Value_Location_RF_Diff(index) = NaN;
+        Value_Location_RF_ROC(index) = NaN;
+
+
+
+
+    
+end
+
+%% For passive viewing task 
+
+if isfield(OutputData,'ObjectPassiveViewing')
+    PV_Index(index)=1;
+    clear Data;
+    Data =OutputData.ObjectPassiveViewing.DataStamp;
+
+    hPSTH_TgtOn_Value_RF_PV{index} =double(Data('hPSTH_TgtOn_Value_RF')); 
+    hPSTH_TgtOn_Good_RF_PV{index} =double(Data('hPSTH_TgtOn_Good_RF')); 
+    hPSTH_TgtOn_Bad_RF_PV{index} =double(Data('hPSTH_TgtOn_Bad_RF')); 
+    Time_TgtOn_PV=Data('Time_TgtOn');
+
+    %
+    PSTH_TgtOn_Good_RF_PV{index} =Data('PSTH_TgtOn_Good_RF_z'); 
+    PSTH_TgtOn_Bad_RF_PV{index} =Data('PSTH_TgtOn_Bad_RF_z'); 
+    %}
+    %{
+    PSTH_TgtOn_Good_RF_PV{index} =Data('PSTH_TgtOn_Good_RF'); 
+    PSTH_TgtOn_Bad_RF_PV{index} =Data('PSTH_TgtOn_Bad_RF'); 
+    %}
+    AUCPSTH_TgtOn_Value_RF_PV{index} =Data('AUCPSTH_TgtOn_Value_RF'); 
+
+    
+   
+
+    SelectTime_PV=[100,300];
+    tmp = hPSTH_TgtOn_Value_RF_PV{index};
+
+    hInterval = tmp(Time_TgtOn_PV>=SelectTime_PV(1) & Time_TgtOn_PV<=SelectTime_PV(2));
+    if sum(hInterval)>5
+        Value_PV_RF_Prop_Sig(index) = 1;
+    else
+        Value_PV_RF_Prop_Sig(index) = 0;
+
+    end
+
+  tmpGood = Data('PSTH_TgtOn_Good_RF_z');
+  tmpBad = Data('PSTH_TgtOn_Bad_RF_z');
+
+        Good_PV_RF = tmpGood(Time_TgtOn_PV>=100 & Time_TgtOn_PV<=300);
+        Bad_PV_RF = tmpBad(Time_TgtOn_PV>=100 & Time_TgtOn_PV<=300);
+
+        [h,p]=ttest2(Good_PV_RF,Bad_PV_RF);
+        Value_PV_RF(index) = h;
+        Value_PV_RF_Diff(index) = mean(Good_PV_RF)-mean(Bad_PV_RF);
+        Value_PV_RF_ROC(index) = rocN(Good_PV_RF,Bad_PV_RF);
+
+   
+else
+    PV_Index(index)=0;
+    hPSTH_TgtOn_Value_RF_PV{index} = NaN*ones(1,160); 
+    hPSTH_TgtOn_Good_RF_PV{index} = NaN*ones(1,160); 
+    hPSTH_TgtOn_Bad_RF_PV{index} = NaN*ones(1,160); 
+
+    PSTH_TgtOn_Good_RF_PV{index} = NaN*ones(1,160); 
+    PSTH_TgtOn_Bad_RF_PV{index} = NaN*ones(1,160); 
+    Value_PV_RF_Prop_Sig(index)=NaN;
+
+    PSTH_TgtOn_Good_RF_PV{index} = NaN*ones(1,160); 
+    PSTH_TgtOn_Bad_RF_PV{index} = NaN*ones(1,160); 
+
+    AUCPSTH_TgtOn_Value_RF_PV{index} =NaN*ones(1,160); 
+
+
+    Value_PV_RF(index) = NaN;
+        Value_PV_RF_Diff(index) = NaN;
+        Value_PV_RF_ROC(index) = NaN;
+
+
+end
+
+
+
+     
+     index = index+1;   
+    end %End of for file name
+     
+end
+
+
+%%
+%
+%Separate cells into different modulation groups according to laser
+%response
+
+%{
+%Separate into 5 groups 
+
+
+Fast_M = Latency<10;
+Slow_M = Latency>=10;
+Excitation = SM> 0;
+Inhibition = SM<=0;
+
+Sig_m = SM_p < 0.05&(~isnan(Latency));
+%Sig_m = ~isnan(Latency) & AS >=5;
+
+%Sig_m = (p_whole_cri50<0.05 | SM_p<0.05 | PMS_p<0.05)&(~isnan(Latency));
+%Sig_m = p_whole_cri50>-0.1;
+%Latency
+Non_Sig_m = ~Sig_m;
+
+
+
+%Non_Sig_m = Non_Sig_level2;
+
+
+Ex_Fast_Sig = Fast_M & Excitation & Sig_m;
+
+Ex_Slow_Sig = Slow_M & Excitation & Sig_m;
+
+
+%In_Fast_Sig = Fast_M & Inhibition & Sig_m;
+
+%In_Slow_Sig = Slow_M & Inhibition & Sig_m;
+
+In_Sig = Inhibition & Sig_m;
+
+
+
+ModuType = NaN*ones(1,length(Sig_m));
+
+
+
+%%
+ModuType(Ex_Fast_Sig) =1;
+ModuType(Ex_Slow_Sig) =2;
+
+ModuType(In_Sig) =3;
+%ModuType(In_Slow_Sig) =4;
+
+ModuType(Non_Sig_m) =4;
+
+
+
+
+ModulString = {'Fast Excitation','Slow Excitation','Inhibition','No Effect'};
+
+NonSigString = {'NonSig_Ex_l1','NonSig_In_l1','NonSig_Ex_l2','NonSig_In_l2'};
+
+Latency_Ex = Latency(Ex_Fast_Sig|Ex_Slow_Sig);
+Latency_In = Latency(In_Sig);
+
+
+
+UniqueMol = unique(ModuType);
+
+UniqueMol = UniqueMol(~isnan(UniqueMol));
+
+ModuType=ModuType';%Transfer to column;
+%}
+
+%{
+%For bar plot
+ExcitationNum = sum(Excitation & Sig_m);
+InhibitionNum = sum(Inhibition & Sig_m);
+NonSigNum = sum(~Sig_m);
+%}
+%Cell Selection
+ResponseValid = (FR_Mean_oneDR>1 & FR_Mean_stable>1)';
+
+
+%VisResponseSel = (p_Vis_RF_stable<0.05 & VisDiff_RF_stable>0)';
+VisResponseSel = (p_Vis_RF_stable<0.05 & VisDiff_RF_stable>0)';
+
+
+Sel = OneDRIndex' == 1;
+Sel_All = Sel & ResponseValid & VisResponseSel;
+
+%Stable Value
+PSTH_TgtOn_Good_RF_Stable = cell2mat(PSTH_TgtOn_Good_RF_stable');
+PSTH_TgtOn_Bad_RF_Stable = cell2mat(PSTH_TgtOn_Bad_RF_stable');
+
+PSTH_TgtOn_Good_RF_Stable=(PSTH_TgtOn_Good_RF_Stable')';
+PSTH_TgtOn_Bad_RF_Stable=(PSTH_TgtOn_Bad_RF_Stable')';
+
+
+PSTH_TgtOn_Diff_RF_Stable = PSTH_TgtOn_Good_RF_Stable -PSTH_TgtOn_Bad_RF_Stable;
+
+AUCPSTH_TgtOn_Value_RF_stable = cell2mat(AUCPSTH_TgtOn_Value_RF_stable');
+
+PSTH_SacOn_Good_RF_Stable = cell2mat(PSTH_SacOn_Good_RF_stable');
+PSTH_SacOn_Bad_RF_Stable = cell2mat(PSTH_SacOn_Bad_RF_stable');
+
+PSTH_SacOn_Diff_RF_Stable = PSTH_SacOn_Good_RF_Stable -PSTH_SacOn_Bad_RF_Stable;
+
+[value,sorted_index]=sort(Latency_Value_Stable,'Ascend');
+%[value,sorted_index]=sort(Latency_Value_OneDR,'Ascend');
+
+
+
+Latency_Sel_All_Stable = Latency_Value_Stable(Sel_All);
+Latency_Sel_All_OneDR = Latency_Value_OneDR(Sel_All);
+
+
+%Distribution of time of value separation for whole FEF population
+bin_edges = -400:50:400;
+counts_Stable_All = histcounts(Latency_Sel_All_Stable, bin_edges);
+counts_OneDR_All = histcounts(Latency_Sel_All_OneDR, bin_edges);
+
+
+% OneDR
+PSTH_Good_TgtOn_RF_oneDR = (cell2mat(PSTH_Good_TgtOn_RF_oneDR')')';
+PSTH_Bad_TgtOn_RF_oneDR = (cell2mat(PSTH_Bad_TgtOn_RF_oneDR')')';
+
+PSTH_TgtOn_Diff_RF_oneDR = PSTH_Good_TgtOn_RF_oneDR - PSTH_Bad_TgtOn_RF_oneDR;
+
+
+AUCPSTH_TgtOn_Value_RF_oneDR = (cell2mat(AUCPSTH_TgtOn_Value_RF_oneDR')')';
+
+
+%% Proportions
+% Stable value
+%Whole group 
+hPSTH_TgtOn_Value_RF_sel_All = cell2mat(hPSTH_TgtOn_Value_RF(Sel_All)');%(Sel_All);
+
+Prop_TgtOn_Value_RF_All = sum(hPSTH_TgtOn_Value_RF_sel_All,1)/size(hPSTH_TgtOn_Value_RF_sel_All,1);
+
+hPSTH_SacOn_Value_RF_sel_All = cell2mat(hPSTH_SacOn_Value_RF(Sel_All)');%(Sel_All);
+
+Prop_SacOn_Value_RF_All = sum(hPSTH_SacOn_Value_RF_sel_All,1)/size(hPSTH_SacOn_Value_RF_sel_All,1);
+
+
+
+hPSTH_TgtOn_Value_nonRF_sel_All = cell2mat(hPSTH_TgtOn_Value_nonRF(Sel_All)');%(Sel_All);
+
+Prop_TgtOn_Value_nonRF_All = sum(hPSTH_TgtOn_Value_nonRF_sel_All,1)/size(hPSTH_TgtOn_Value_nonRF_sel_All,1);
+
+hPSTH_SacOn_Value_nonRF_sel_All = cell2mat(hPSTH_SacOn_Value_nonRF(Sel_All)');%(Sel_All);
+
+Prop_SacOn_Value_nonRF_All = sum(hPSTH_SacOn_Value_nonRF_sel_All,1)/size(hPSTH_SacOn_Value_nonRF_sel_All,1);
+
+
+%PSTH_TgtOn_Bad_RF_Stable_All=PSTH_TgtOn_Bad_RF_Stable(Sel_All,:);
+%PSTH_TgtOn_Good_RF_Stable_All=PSTH_TgtOn_Good_RF_Stable(Sel_All,:);
+
+% mean PSTH 
+%
+%Sig_Stable = Value_Stable_RF_Prop_Sig' & Sel_All;
+Sig_Stable = (Value_Stable_RF==1)' & Sel_All;
+Prop_Sig_Stable = sum(Sig_Stable)/sum(Sel_All);
+
+%PreferenceMetric_stable = Value_Stable_RF_ROC';%Other option: Value_Stable_RF_Diff
+PreferenceMetric_stable = Value_Stable_RF_Diff';
+
+
+%GoodPrefer = PreferenceMetric_stable>0.5;
+GoodPrefer = PreferenceMetric_stable>0;
+BadPrefer = ~GoodPrefer;
+
+GoodPreferSel =  GoodPrefer & Sig_Stable;
+BadPreferSel = BadPrefer & Sig_Stable;
+
+PSTH_TgtOn_Good_RF_Stable_GoodPrefer = PSTH_TgtOn_Good_RF_Stable(GoodPreferSel,:);
+PSTH_TgtOn_Bad_RF_Stable_GoodPrefer = PSTH_TgtOn_Bad_RF_Stable(GoodPreferSel,:);
+
+PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Mean = mean(PSTH_TgtOn_Good_RF_Stable_GoodPrefer,1);
+PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Mean = mean(PSTH_TgtOn_Bad_RF_Stable_GoodPrefer,1);
+
+PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Sem = std(PSTH_TgtOn_Good_RF_Stable_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel));
+PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Sem = std(PSTH_TgtOn_Bad_RF_Stable_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel));
+
+
+
+
+
+%AUCPSTH_TgtOn_Value_RF_stable{index} = Data('AUCPSTH_TgtOn_Value_RF');
+
+
+PSTH_TgtOn_Good_RF_Stable_BadPrefer = PSTH_TgtOn_Good_RF_Stable(BadPreferSel,:);
+PSTH_TgtOn_Bad_RF_Stable_BadPrefer = PSTH_TgtOn_Bad_RF_Stable(BadPreferSel,:);
+
+PSTH_TgtOn_Good_RF_Stable_BadPrefer_Mean = mean(PSTH_TgtOn_Good_RF_Stable_BadPrefer,1);
+PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Mean = mean(PSTH_TgtOn_Bad_RF_Stable_BadPrefer,1);
+
+PSTH_TgtOn_Good_RF_Stable_BadPrefer_Sem = std(PSTH_TgtOn_Good_RF_Stable_BadPrefer,[],1)/sqrt(sum(BadPreferSel));
+PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Sem = std(PSTH_TgtOn_Bad_RF_Stable_BadPrefer,[],1)/sqrt(sum(BadPreferSel));
+
+AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer = AUCPSTH_TgtOn_Value_RF_stable(GoodPreferSel,:);
+AUCPSTH_TgtOn_Value_RF_stable_BadPrefer = AUCPSTH_TgtOn_Value_RF_stable(BadPreferSel,:);
+
+AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Mean=mean(AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer,1);
+AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Mean=mean(1-AUCPSTH_TgtOn_Value_RF_stable_BadPrefer,1);
+
+AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Sem=std(AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel));
+AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Sem=std(AUCPSTH_TgtOn_Value_RF_stable_BadPrefer,[],1)/sqrt(sum(BadPreferSel));
+
+
+%All together
+
+PSTH_TgtOn_Good_RF_Stable_Prefer = [PSTH_TgtOn_Good_RF_Stable_GoodPrefer;PSTH_TgtOn_Bad_RF_Stable_BadPrefer];
+PSTH_TgtOn_Bad_RF_Stable_Prefer = [PSTH_TgtOn_Bad_RF_Stable_GoodPrefer;PSTH_TgtOn_Good_RF_Stable_BadPrefer];
+
+PSTH_TgtOn_Good_RF_Stable_Prefer_Mean = mean(PSTH_TgtOn_Good_RF_Stable_Prefer,1);
+PSTH_TgtOn_Bad_RF_Stable_Prefer_Mean = mean(PSTH_TgtOn_Bad_RF_Stable_Prefer,1);
+
+PSTH_TgtOn_Good_RF_Stable_Prefer_Sem = std(PSTH_TgtOn_Good_RF_Stable_Prefer,[],1)/sqrt(sum(size(PSTH_TgtOn_Good_RF_Stable_Prefer,1)));
+PSTH_TgtOn_Bad_RF_Stable_Prefer_Sem = std(PSTH_TgtOn_Bad_RF_Stable_Prefer,[],1)/sqrt(sum(size(PSTH_TgtOn_Bad_RF_Stable_Prefer,1)));
+
+%keyboard
+
+%{
+figure
+subplot(1,2,1)
+errorbar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Mean,PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Mean,PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Sem,'-b');
+
+subplot(1,2,2)
+errorbar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Good_RF_Stable_BadPrefer_Mean,PSTH_TgtOn_Good_RF_Stable_BadPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Mean,PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Sem,'-b');
+%}
+
+%AUC
+%{
+figure
+
+errorbar(PSTH_Time_TgtOn_stable,AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Mean,AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_stable,AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Mean,AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Sem,'-b');
+%}
+
+
+
+
+
+
+
+%keyboard
+
+%}
+
+%% OneDR
+
+
+% All group
+hPSTH_TgtOn_Value_RF_sel_oneDR_All = cell2mat(hPSTH_TgtOn_Value_RF_oneDR(Sel_All)');%(Sel_All);
+
+Prop_TgtOn_Value_RF_oneDR_All = sum(hPSTH_TgtOn_Value_RF_sel_oneDR_All,1)/size(hPSTH_TgtOn_Value_RF_sel_oneDR_All,1);
+hPSTH_SacOn_Value_RF_sel_oneDR_All = cell2mat(hPSTH_SacOn_Value_RF_oneDR(Sel_All)');%(Sel_All);
+
+Prop_SacOn_Value_RF_oneDR_All = sum(hPSTH_SacOn_Value_RF_sel_oneDR_All,1)/size(hPSTH_SacOn_Value_RF_sel_oneDR_All,1);
+
+
+
+hPSTH_TgtOn_Value_nonRF_sel_oneDR_All = cell2mat(hPSTH_TgtOn_Value_nonRF_oneDR(Sel_All)');%(Sel_All);
+
+Prop_TgtOn_Value_nonRF_oneDR_All = sum(hPSTH_TgtOn_Value_nonRF_sel_oneDR_All,1)/size(hPSTH_TgtOn_Value_nonRF_sel_oneDR_All,1);
+
+hPSTH_SacOn_Value_nonRF_sel_oneDR_All = cell2mat(hPSTH_SacOn_Value_nonRF_oneDR(Sel_All)');%(Sel_All);
+
+Prop_SacOn_Value_nonRF_oneDR_All = sum(hPSTH_SacOn_Value_nonRF_sel_oneDR_All,1)/size(hPSTH_SacOn_Value_nonRF_sel_oneDR_All,1);
+
+
+%% 
+%{
+figure
+plot(PSTH_Time_TgtOn_stable,Prop_TgtOn_Value_RF_All,'-r','LineWidth',3);
+figure
+plot(PSTH_Time_TgtOn_OneDR,Prop_TgtOn_Value_RF_oneDR_All,'-r','LineWidth',3);
+%}
+
+
+
+
+
+
+%PSTH
+%Value_Location_RF==1
+
+%Sig_OneDR = Value_OneDR_RF_Prop_Sig' & Sel_All;
+Sig_OneDR = (Value_Location_RF==1)' & Sel_All;
+Prop_Sig_OneDR = sum(Sig_OneDR)/sum(Sel_All);
+
+Sig_OneDR2 = (Value_Location_RF2==1)' & Sel_All;
+Prop_Sig_OneDR2 = sum(Sig_OneDR2)/sum(Sel_All);
+
+%PreferenceMetric_oneDR = Value_Location_RF_Diff';%Other option:Value_Location_RF_ROC
+PreferenceMetric_oneDR = Value_Location_RF_Diff';
+PreferenceMetric_oneDR2 = Value_Location_RF_Diff2';
+
+
+%GoodPrefer = PreferenceMetric_stable>0.5;
+GoodPrefer_OneDR = PreferenceMetric_oneDR>0;%based on basline
+BadPrefer_OneDR = ~GoodPrefer_OneDR;
+
+GoodPrefer_OneDR2 = PreferenceMetric_oneDR2>0;%based on target onset % Use this one
+BadPrefer_OneDR2 = ~GoodPrefer_OneDR2;
+
+
+
+GoodPreferSel_OneDR =  GoodPrefer_OneDR & Sig_OneDR;
+BadPreferSel_OneDR = BadPrefer_OneDR & Sig_OneDR;
+
+
+GoodPreferSel_OneDR2 =  GoodPrefer_OneDR2 & Sig_OneDR2;
+BadPreferSel_OneDR2 = BadPrefer_OneDR2 & Sig_OneDR2;
+
+PSTH_TgtOn_Good_RF_OneDR_GoodPrefer = PSTH_Good_TgtOn_RF_oneDR(GoodPreferSel_OneDR,:);
+PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer = PSTH_Bad_TgtOn_RF_oneDR(GoodPreferSel_OneDR,:);
+
+PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Mean = mean(PSTH_TgtOn_Good_RF_OneDR_GoodPrefer,1);
+PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Mean = mean(PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer,1);
+
+PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Sem = std(PSTH_TgtOn_Good_RF_OneDR_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel_OneDR));
+PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Sem = std(PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel_OneDR));
+
+
+PSTH_TgtOn_Good_RF_OneDR_BadPrefer = PSTH_Good_TgtOn_RF_oneDR(BadPreferSel_OneDR,:);
+PSTH_TgtOn_Bad_RF_OneDR_BadPrefer = PSTH_Bad_TgtOn_RF_oneDR(BadPreferSel_OneDR,:);
+
+PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Mean = mean(PSTH_TgtOn_Good_RF_OneDR_BadPrefer,1);
+PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Mean = mean(PSTH_TgtOn_Bad_RF_OneDR_BadPrefer,1);
+
+PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Sem = std(PSTH_TgtOn_Good_RF_OneDR_BadPrefer,[],1)/sqrt(sum(BadPreferSel_OneDR));
+PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Sem = std(PSTH_TgtOn_Bad_RF_OneDR_BadPrefer,[],1)/sqrt(sum(BadPreferSel_OneDR));
+
+%For preferred, based on target onset
+
+PSTH_TgtOn_Good_RF_OneDR_Prefer = [PSTH_TgtOn_Good_RF_OneDR_GoodPrefer;PSTH_TgtOn_Bad_RF_OneDR_BadPrefer];
+PSTH_TgtOn_Bad_RF_OneDR_Prefer = [PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer;PSTH_TgtOn_Good_RF_OneDR_BadPrefer];
+
+
+PSTH_TgtOn_Good_RF_OneDR_Prefer_Mean = mean(PSTH_TgtOn_Good_RF_OneDR_Prefer,1);
+PSTH_TgtOn_Bad_RF_OneDR_Prefer_Mean = mean(PSTH_TgtOn_Bad_RF_OneDR_Prefer);
+
+PSTH_TgtOn_Good_RF_OneDR_Prefer_Sem = std(PSTH_TgtOn_Good_RF_OneDR_Prefer,[],1)/sqrt(sum(size(PSTH_TgtOn_Good_RF_OneDR_Prefer,1)));
+PSTH_TgtOn_Bad_RF_OneDR_Prefer_Sem = mean(PSTH_TgtOn_Bad_RF_OneDR_Prefer)/sqrt(size(PSTH_TgtOn_Bad_RF_OneDR_Prefer,1));
+
+
+AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer =AUCPSTH_TgtOn_Value_RF_oneDR(GoodPreferSel_OneDR,:);
+AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer =AUCPSTH_TgtOn_Value_RF_oneDR(BadPreferSel_OneDR,:);
+
+AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Mean=mean(AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer,1);
+AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Sem=std(AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer,[],1)/sqrt(sum(GoodPreferSel_OneDR));
+
+AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Mean=mean(1-AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer,1);
+AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Sem=std(AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer,[],1)/sqrt(sum(BadPreferSel_OneDR));
+
+%{
+figure
+subplot(1,2,1)
+errorbar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Mean,PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Mean,PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Sem,'-b');
+
+subplot(1,2,2)
+errorbar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Mean,PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Mean,PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Sem,'-b');
+
+figure
+
+errorbar(PSTH_Time_TgtOn_OneDR,AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Mean,AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Sem,'-r');
+hold on
+errorbar(PSTH_Time_TgtOn_OneDR,AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Mean,AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Sem,'-b');
+
+%}
+
+%keyboard
+
+
+
+%% Passive Viewing
+hPSTH_TgtOn_Value_RF_PV=cell2mat(hPSTH_TgtOn_Value_RF_PV');
+
+
+
+hPSTH_TgtOn_Value_RF_PV_All=hPSTH_TgtOn_Value_RF_PV(Sel_All&PV_Index'==1,:);
+
+Prop_Sig_PV_All=sum(hPSTH_TgtOn_Value_RF_PV_All)/size(hPSTH_TgtOn_Value_RF_PV_All,1);
+
+%{
+figure
+plot(Time_TgtOn_PV,Prop_Sig_PV_All,'-r')
+%}
+
+PSTH_TgtOn_Good_RF_PV=(cell2mat(PSTH_TgtOn_Good_RF_PV')')';
+PSTH_TgtOn_Bad_RF_PV=(cell2mat(PSTH_TgtOn_Bad_RF_PV')')';
+
+%Sel_Sig_PV = Sig_Stable==1 &PV_Index'==1;
+Sel_Sig_PV = (Value_Stable_RF==1)' &PV_Index'==1;
+
+
+Good_PV = (Value_PV_RF_Diff>0)';
+Bad_PV = ~Good_PV;
+
+Good_sel_PV = Good_PV & Sel_Sig_PV;
+Bad_sel_PV = Bad_PV & Sel_Sig_PV;
+
+PSTH_TgtOn_Good_RF_PV_Sig_Good = PSTH_TgtOn_Good_RF_PV(Good_sel_PV,:);
+PSTH_TgtOn_Bad_RF_PV_Sig_Good = PSTH_TgtOn_Bad_RF_PV(Good_sel_PV,:);
+
+PSTH_TgtOn_Good_RF_PV_Sig_Bad = PSTH_TgtOn_Good_RF_PV(Bad_sel_PV,:);
+PSTH_TgtOn_Bad_RF_PV_Sig_Bad = PSTH_TgtOn_Bad_RF_PV(Bad_sel_PV,:);
+
+
+
+PSTH_TgtOn_Good_RF_PV_Sig_Good_Mean=mean(PSTH_TgtOn_Good_RF_PV_Sig_Good,1);
+PSTH_TgtOn_Bad_RF_PV_Sig_Good_Mean=mean(PSTH_TgtOn_Bad_RF_PV_Sig_Good,1);
+
+PSTH_TgtOn_Good_RF_PV_Sig_Good_Sem=std(PSTH_TgtOn_Good_RF_PV_Sig_Good,[],1)/sqrt(sum(Good_sel_PV));
+PSTH_TgtOn_Bad_RF_PV_Sig_Good_Sem=std(PSTH_TgtOn_Bad_RF_PV_Sig_Good,[],1)/sqrt(sum(Good_sel_PV));
+
+PSTH_TgtOn_Good_RF_PV_Sig_Bad_Mean=mean(PSTH_TgtOn_Good_RF_PV_Sig_Bad,1);
+PSTH_TgtOn_Bad_RF_PV_Sig_Bad_Mean=mean(PSTH_TgtOn_Bad_RF_PV_Sig_Bad,1);
+
+PSTH_TgtOn_Good_RF_PV_Sig_Bad_Sem=std(PSTH_TgtOn_Good_RF_PV_Sig_Bad,[],1)/sqrt(sum(Bad_sel_PV));
+PSTH_TgtOn_Bad_RF_PV_Sig_Bad_Sem=std(PSTH_TgtOn_Bad_RF_PV_Sig_Bad,[],1)/sqrt(sum(Bad_sel_PV));
+
+
+
+
+% Passive Viewing Task
+
+AUCPSTH_TgtOn_RF_PV=cell2mat(AUCPSTH_TgtOn_Value_RF_PV');
+
+
+AUCPSTH_TgtOn_RF_PV_Sig_Good = AUCPSTH_TgtOn_RF_PV(Good_sel_PV,:);
+AUCPSTH_TgtOn_RF_PV_Sig_Bad = AUCPSTH_TgtOn_RF_PV(Bad_sel_PV,:);
+
+
+
+AUCPSTH_TgtOn_RF_PV_Sig_Good_mean=nanmean(AUCPSTH_TgtOn_RF_PV_Sig_Good,1);
+AUCPSTH_TgtOn_RF_PV_Sig_Good_sem=nanstd(AUCPSTH_TgtOn_RF_PV_Sig_Good,[],1)/sqrt(sum(Good_sel_PV));
+
+AUCPSTH_TgtOn_RF_PV_Sig_Bad_mean=nanmean(1-AUCPSTH_TgtOn_RF_PV_Sig_Bad,1);
+AUCPSTH_TgtOn_RF_PV_Sig_Bad_sem=std(AUCPSTH_TgtOn_RF_PV_Sig_Bad,[],1)/sqrt(sum(Bad_sel_PV));
+%{
+figure
+subplot(1,2,1)
+errorbar(Time_TgtOn_PV,PSTH_TgtOn_Good_RF_PV_Fast_Sig_Good_Mean,PSTH_TgtOn_Good_RF_PV_Fast_Sig_Good_Sem,'-r')
+hold on
+errorbar(Time_TgtOn_PV,PSTH_TgtOn_Bad_RF_PV_Fast_Sig_Good_Mean,PSTH_TgtOn_Bad_RF_PV_Fast_Sig_Good_Sem,'-b')
+
+subplot(1,2,2)
+errorbar(Time_TgtOn_PV,PSTH_TgtOn_Good_RF_PV_Fast_Sig_Bad_Mean,PSTH_TgtOn_Good_RF_PV_Fast_Sig_Bad_Sem,'-r')
+hold on
+errorbar(Time_TgtOn_PV,PSTH_TgtOn_Bad_RF_PV_Fast_Sig_Bad_Mean,PSTH_TgtOn_Bad_RF_PV_Fast_Sig_Bad_Sem,'-b')
+
+figure
+
+errorbar(Time_TgtOn_PV,AUCPSTH_TgtOn_RF_PV_Sig_Good_mean,AUCPSTH_TgtOn_RF_PV_Sig_Good_sem,'-r')
+hold on
+errorbar(Time_TgtOn_PV,AUCPSTH_TgtOn_RF_PV_Sig_Bad_mean,AUCPSTH_TgtOn_RF_PV_Sig_Bad_sem,'-b')
+%}
+%keyboard
+
+%Distribution of ROC across tasks
+Absolute_ROC_stable = Value_Stable_RF_ROC;
+Absolute_ROC_stable(Absolute_ROC_stable<0.5)=1-Absolute_ROC_stable(Absolute_ROC_stable<0.5);
+
+Absolute_ROC_oneDR = Value_Location_RF_ROC;
+Absolute_ROC_oneDR(Value_Location_RF_ROC<0.5)=1-Absolute_ROC_oneDR(Value_Location_RF_ROC<0.5);
+
+Absolute_ROC_oneDR2 = Value_Location_RF_ROC2;
+Absolute_ROC_oneDR2(Value_Location_RF_ROC2<0.5)=1-Absolute_ROC_oneDR2(Value_Location_RF_ROC2<0.5);
+%{
+figure
+scatter(Absolute_ROC_stable(Sig_Stable&Sig_OneDR&Sel_All),Absolute_ROC_oneDR(Sig_Stable&Sig_OneDR&Sel_All));
+
+keyboard
+%}
+%For AUC plot
+sig_AUC_stable=(Value_Stable_RF==1)';
+sig_AUC_oneDR=(Value_Location_RF==1)';
+sig_AUC_oneDR2=(Value_Location_RF2==1)';
+
+%Histogram
+bins = 0:0.1:1;
+
+%Stable value
+Value_Stable_RF_ROC_all = Value_Stable_RF_ROC(Sel_All);
+Value_Stable_RF_ROC_sig= Value_Stable_RF_ROC(sig_AUC_stable & Sel_All);
+Value_Stable_RF_ROC_nonsig = Value_Stable_RF_ROC(~sig_AUC_stable & Sel_All);  
+
+[count_non_sig_stable, ~] = histcounts(Value_Stable_RF_ROC_nonsig, bins);
+[count_sig_stable, ~] = histcounts(Value_Stable_RF_ROC_sig, bins);
+counts_stacked_stable = [count_sig_stable; count_non_sig_stable]';  % Transpose to match bar input format
+bin_centers = bins(1:end-1) + diff(bins)/2;
+
+
+% One DR
+%Based on baseline
+Value_oneDR_RF_ROC_all = Value_Location_RF_ROC(Sel_All);
+Value_oneDR_RF_ROC_sig= Value_Location_RF_ROC(sig_AUC_oneDR & Sel_All);
+Value_oneDR_RF_ROC_nonsig = Value_Location_RF_ROC(~sig_AUC_oneDR & Sel_All);  
+
+[count_non_sig_oneDR, ~] = histcounts(Value_oneDR_RF_ROC_nonsig, bins);
+[count_sig_oneDR, ~] = histcounts(Value_oneDR_RF_ROC_sig, bins);
+counts_stacked_oneDR = [count_sig_oneDR; count_non_sig_oneDR]';  % Transpose to match bar input format
+%bin_centers = bins(1:end-1) + diff(bins)/2;
+
+%Based on target onset period
+Value_oneDR_RF_ROC_all2 = Value_Location_RF_ROC2(Sel_All);
+Value_oneDR_RF_ROC_sig2= Value_Location_RF_ROC2(sig_AUC_oneDR2 & Sel_All);
+Value_oneDR_RF_ROC_nonsig2 = Value_Location_RF_ROC2(~sig_AUC_oneDR2 & Sel_All);  
+
+[count_non_sig_oneDR2, ~] = histcounts(Value_oneDR_RF_ROC_nonsig2, bins);
+[count_sig_oneDR2, ~] = histcounts(Value_oneDR_RF_ROC_sig2, bins);
+counts_stacked_oneDR2 = [count_sig_oneDR2; count_non_sig_oneDR2]';  % Transpose to match bar input format
+
+
+%Find out example neurons
+StableValueOnly = sig_AUC_stable & Sel_All & ~sig_AUC_oneDR;
+OneDROnly = ~sig_AUC_stable & Sel_All & sig_AUC_oneDR;
+BothValue = sig_AUC_stable & Sel_All & sig_AUC_oneDR;
+
+StableValueOnly2 = sig_AUC_stable & Sel_All & ~sig_AUC_oneDR2;
+OneDROnly2 = ~sig_AUC_stable & Sel_All & sig_AUC_oneDR2;
+BothValue2 = sig_AUC_stable & Sel_All & sig_AUC_oneDR2;
+BothValue2 = sig_AUC_stable & Sel_All & sig_AUC_oneDR2; %(based on target onset period)
+
+Consistent = (GoodPrefer_OneDR & GoodPrefer)|(BadPrefer_OneDR &BadPrefer);
+InConsistent = (GoodPrefer_OneDR & BadPrefer)|(BadPrefer_OneDR & GoodPrefer);
+
+Consistent2 = (GoodPrefer_OneDR2 & GoodPrefer)|(BadPrefer_OneDR2 &BadPrefer);
+InConsistent2 = (GoodPrefer_OneDR2 & BadPrefer)|(BadPrefer_OneDR2 & GoodPrefer);
+
+Consistent3 = (GoodPrefer_OneDR2 & GoodPrefer); %Remove bad prefer in location value task
+InConsistent3 = (GoodPrefer_OneDR2 & BadPrefer);
+
+
+
+BothValue_Consistent = BothValue & Consistent;
+BothValue_InConsistent = BothValue & InConsistent;
+
+BothValue_Consistent2 = BothValue2 & Consistent2;
+BothValue_InConsistent2 = BothValue2 & InConsistent2;
+
+BothValue_Consistent3 = BothValue2 & Consistent3;
+BothValue_InConsistent3 = BothValue2 & InConsistent3;
+
+
+
+StableValueOnly_Num = sum(StableValueOnly);
+OneDROnly_Num = sum(OneDROnly);
+BothValue_Num = sum(BothValue);
+
+BothValueConsistent_Num = sum(BothValue_Consistent);
+BothValueInConsistent_Num = sum(BothValue_InConsistent);
+
+TotalNum = sum(Sel_All);
+NoneValue_Num = TotalNum - StableValueOnly_Num-OneDROnly_Num-BothValue_Num;
+
+%keyboard
+%Pie Plot
+
+disp(sprintf('StableValueOnly: %d',StableValueOnly_Num))
+disp(sprintf('OneDROnly: %d',OneDROnly_Num))
+disp(sprintf('BothValue_Num: %d',BothValue_Num))
+disp(sprintf('BothValueConsistent_Num: %d',BothValueConsistent_Num))
+disp(sprintf('BothValueInConsistent_Num: %d',BothValueInConsistent_Num))
+disp(sprintf('NoneValue_Num: %d',NoneValue_Num))
+
+
+%For both values
+
+Absolute_ROC_stable_BothConsistent=Absolute_ROC_stable(BothValue_Consistent);
+Absolute_ROC_oneDR_BothConsistent=Absolute_ROC_oneDR(BothValue_Consistent);
+
+Absolute_ROC_stable_BothConsistent2=Absolute_ROC_stable(BothValue_Consistent2);
+Absolute_ROC_oneDR_BothConsistent2=Absolute_ROC_oneDR2(BothValue_Consistent2);
+
+Absolute_ROC_stable_BothConsistent3=Absolute_ROC_stable(BothValue_Consistent3);
+Absolute_ROC_oneDR_BothConsistent3=Absolute_ROC_oneDR2(BothValue_Consistent3);
+
+
+
+Absolute_ROC_stable_BothInConsistent=Absolute_ROC_stable(BothValue_InConsistent);
+Absolute_ROC_oneDR_BothInConsistent=Absolute_ROC_oneDR(BothValue_InConsistent);
+
+Absolute_ROC_stable_BothInConsistent2=Absolute_ROC_stable(BothValue_InConsistent2);
+Absolute_ROC_oneDR_BothInConsistent2=Absolute_ROC_oneDR2(BothValue_InConsistent2);
+
+Absolute_ROC_stable_BothInConsistent3=Absolute_ROC_stable(BothValue_InConsistent3);
+Absolute_ROC_oneDR_BothInConsistent3=Absolute_ROC_oneDR2(BothValue_InConsistent3);
+
+
+
+%Select out files
+FileName_StableOnly = FilesNameAll(StableValueOnly)';
+FileName_OneDROnly = FilesNameAll(OneDROnly)';
+FileName_Both = FilesNameAll(BothValue)';
+
+ChannelFull_StableOnly=ChannelFull(StableValueOnly)';
+ChannelFull_OneDROnly=ChannelFull(OneDROnly)';
+ChannelFull_BothValue=ChannelFull(BothValue)';
+
+
+
+
+FileName_Consistent = FilesNameAll(BothValue_Consistent)';
+ChannelFull_Consistent=ChannelFull(BothValue_Consistent)';
+
+
+FileName_InConsistent = FilesNameAll(BothValue_InConsistent)';
+ChannelFull_InConsistent=ChannelFull(BothValue_InConsistent)';
+
+%For bad prefer location value
+
+FileName_BadPrefer_Location = FilesNameAll(BadPreferSel_OneDR2)';
+ChannelFull_BadPrefer_Location=ChannelFull(BadPreferSel_OneDR2)';
+
+
+PSTH_Good_TgtOn_RF_oneDR_badprefer2 = PSTH_Good_TgtOn_RF_oneDR(BadPreferSel_OneDR2,:);
+PSTH_Bad_TgtOn_RF_oneDR_badprefer2 = PSTH_Bad_TgtOn_RF_oneDR(BadPreferSel_OneDR2,:);
+
+%{
+for i = 1:sum(BadPreferSel_OneDR2)
+    if mod(i,16)==1
+        index = 1;
+        figure
+    end
+    subplot(4,4,index)
+plot(PSTH_Time_TgtOn_OneDR,PSTH_Good_TgtOn_RF_oneDR_badprefer2(i,:),'-r');
+hold on
+plot(PSTH_Time_TgtOn_OneDR,PSTH_Bad_TgtOn_RF_oneDR_badprefer2(i,:),'-b');
+title( sprintf('%s,C%d',FileName_BadPrefer_Location{i},ChannelFull_BadPrefer_Location(i)));
+    index =index +1;
+end
+
+
+keyboard
+%}
+
+
+%AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer = AUCPSTH_TgtOn_Value_RF_stable(GoodPreferSel,:);
+%AUCPSTH_TgtOn_Value_RF_stable_BadPrefer = AUCPSTH_TgtOn_Value_RF_stable(BadPreferSel,:);
+
+AUCPSTH_stable_Abs = AUCPSTH_TgtOn_Value_RF_stable;
+AUCPSTH_stable_Abs(BadPreferSel,:)=1-AUCPSTH_stable_Abs(BadPreferSel,:);
+
+AUCPSTH_oneDR_Abs = AUCPSTH_TgtOn_Value_RF_oneDR;
+AUCPSTH_oneDR_Abs(BadPrefer_OneDR,:)=1-AUCPSTH_oneDR_Abs(BadPrefer_OneDR,:);
+
+
+%Stable Only
+AUCPSTH_stable_Abs_stableOnly = AUCPSTH_stable_Abs(StableValueOnly,:);
+AUCPSTH_stable_Abs_stableOnly_Mean = mean(AUCPSTH_stable_Abs_stableOnly,1);
+AUCPSTH_stable_Abs_stableOnly_Sem = std(AUCPSTH_stable_Abs_stableOnly,[],1)/sqrt(sum(StableValueOnly));
+
+AUCPSTH_oneDR_Abs_stableOnly = AUCPSTH_oneDR_Abs(StableValueOnly,:);
+AUCPSTH_oneDR_Abs_stableOnly_Mean = mean(AUCPSTH_oneDR_Abs_stableOnly,1);
+AUCPSTH_oneDR_Abs_stableOnly_Sem = std(AUCPSTH_oneDR_Abs_stableOnly,[],1)/sqrt(sum(StableValueOnly));
+
+%OneDR only
+AUCPSTH_stable_Abs_oneDROnly = AUCPSTH_stable_Abs(OneDROnly,:);
+AUCPSTH_stable_Abs_oneDROnly_Mean = mean(AUCPSTH_stable_Abs_oneDROnly,1);
+AUCPSTH_stable_Abs_oneDROnly_Sem = std(AUCPSTH_stable_Abs_oneDROnly,[],1)/sqrt(sum(OneDROnly));
+
+AUCPSTH_oneDR_Abs_oneDROnly = AUCPSTH_oneDR_Abs(OneDROnly,:);
+AUCPSTH_oneDR_Abs_oneDROnly_Mean = mean(AUCPSTH_oneDR_Abs_oneDROnly,1);
+AUCPSTH_oneDR_Abs_oneDROnly_Sem = std(AUCPSTH_oneDR_Abs_oneDROnly,[],1)/sqrt(sum(OneDROnly));
+
+%Both consistent
+AUCPSTH_stable_Abs_BothConsistent = AUCPSTH_stable_Abs(BothValue_Consistent,:);
+AUCPSTH_stable_Abs_BothConsistent_Mean = mean(AUCPSTH_stable_Abs_BothConsistent,1);
+AUCPSTH_stable_Abs_BothConsistent_Sem = std(AUCPSTH_stable_Abs_BothConsistent,[],1)/sqrt(sum(BothValue_Consistent));
+
+AUCPSTH_oneDR_Abs_BothConsistent = AUCPSTH_oneDR_Abs(BothValue_Consistent,:);
+AUCPSTH_oneDR_Abs_BothConsistent_Mean = mean(AUCPSTH_oneDR_Abs_BothConsistent,1);
+AUCPSTH_oneDR_Abs_BothConsistent_Sem = std(AUCPSTH_oneDR_Abs_BothConsistent,[],1)/sqrt(sum(BothValue_Consistent));
+
+%Both inconsistent
+AUCPSTH_stable_Abs_BothInConsistent = AUCPSTH_stable_Abs(BothValue_InConsistent,:);
+AUCPSTH_stable_Abs_BothInConsistent_Mean = mean(AUCPSTH_stable_Abs_BothInConsistent,1);
+AUCPSTH_stable_Abs_BothInConsistent_Sem = std(AUCPSTH_stable_Abs_BothInConsistent,[],1)/sqrt(sum(BothValue_InConsistent));
+
+AUCPSTH_oneDR_Abs_BothInConsistent = AUCPSTH_oneDR_Abs(BothValue_InConsistent,:);
+AUCPSTH_oneDR_Abs_BothInConsistent_Mean = mean(AUCPSTH_oneDR_Abs_BothInConsistent,1);
+AUCPSTH_oneDR_Abs_BothInConsistent_Sem = std(AUCPSTH_oneDR_Abs_BothInConsistent,[],1)/sqrt(sum(BothValue_InConsistent));
+
+
+AUCPSTH_oneDR_Abs_BothInConsistent2 = 1-AUCPSTH_oneDR_Abs(BothValue_InConsistent,:);
+AUCPSTH_oneDR_Abs_BothInConsistent_Mean2 = mean(AUCPSTH_oneDR_Abs_BothInConsistent2,1);
+AUCPSTH_oneDR_Abs_BothInConsistent_Sem2 = std(AUCPSTH_oneDR_Abs_BothInConsistent2,[],1)/sqrt(sum(BothValue_InConsistent));
+
+
+
+%For Both Value 
+
+AUCPSTH_stable_Abs_Both = AUCPSTH_stable_Abs(BothValue,:);
+AUCPSTH_stable_Abs_Both_Mean = mean(AUCPSTH_stable_Abs_Both,1);
+AUCPSTH_stable_Abs_Both_Sem = std(AUCPSTH_stable_Abs_Both,[],1)/sqrt(sum(BothValue));
+
+AUCPSTH_oneDR_Abs_Both = AUCPSTH_oneDR_Abs(BothValue,:);
+AUCPSTH_oneDR_Abs_Both_Mean = mean(AUCPSTH_oneDR_Abs_Both,1);
+AUCPSTH_oneDR_Abs_Both_Sem = std(AUCPSTH_oneDR_Abs_Both,[],1)/sqrt(sum(BothValue));
+
+PlotAll = 0; % 
+
+
+if ShowFigureFlag
+
+    %% Population Average of PSTH_stable_total
+
+
+FigureStartNum = 200;
+FigureIndex = 1;
+figtitlestr{FigureIndex}='PSTH_Stable_RF_preferred';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,400],'Name',figtitlestr{FigureIndex});
+
+ set(fig{FigureIndex}, 'PaperUnits', 'inches');
+formatFig(fig{FigureIndex}, [6 3], 'nature');
+
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Good_RF_Stable_Prefer_Mean,PSTH_TgtOn_Good_RF_Stable_Prefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Bad_RF_Stable_Prefer_Mean,PSTH_TgtOn_Bad_RF_Stable_Prefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('Object Value');
+ legend({'Preferred','Non-preferred'})
+ %set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+%% Population Average of OneDR_total
+
+
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PSTH_OneDR_RF_preferred';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,400],'Name',figtitlestr{FigureIndex});
+
+ set(fig{FigureIndex}, 'PaperUnits', 'inches');
+formatFig(fig{FigureIndex}, [6 3], 'nature');
+
+
+colors_onedr = [
+    34, 139, 34;  % green
+    120, 94, 240;  % purple
+    86, 180, 233   % blue
+]/255;
+
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Good_RF_OneDR_Prefer_Mean,PSTH_TgtOn_Good_RF_OneDR_Prefer_Sem,'lineProps',{colors_onedr(2,:)},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Bad_RF_OneDR_Prefer_Mean,PSTH_TgtOn_Bad_RF_OneDR_Prefer_Sem,'lineProps',{colors_onedr(1,:)},'transparent',1,'patchSaturation',0.3);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('Location Value');
+ legend({'Preferred','Non-preferred'})
+% set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+%% ROC location value(target onset)
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUC_Scatter_StableOneDR2';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+%
+set(fig{FigureIndex}, 'PaperUnits', 'inches');
+formatFig(fig{FigureIndex}, [6 6], 'nature');
+
+
+
+%Top histogram
+subplot(3,3,[1 2]); 
+hold on;
+b = bar(bin_centers(bin_centers<0.5), counts_stacked_stable(bin_centers<0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = 'b';  
+b(2).FaceColor = 'w';  
+hold on
+b = bar(bin_centers(bin_centers>0.5), counts_stacked_stable(bin_centers>0.5,:), 'stacked');
+xlim([0,1]);
+
+% Set custom face colors
+b(1).FaceColor = 'r';  
+b(2).FaceColor = 'w';  
+
+%Scatter plot
+colors = [
+    254,97,0;  % reddish-orange
+    120, 94, 240;  % purple
+    86, 180, 233   % blue
+]/255;
+
+subplot(3,3,[4 5 7 8]);
+MarkerSize = 100;
+scatter(Value_Stable_RF_ROC_all,Value_oneDR_RF_ROC_all2,MarkerSize,'o','MarkerEdgeColor',[0,0,0],'LineWidth', 1);
+hold on
+scatter(Value_Stable_RF_ROC(sig_AUC_stable&Sel_All),Value_Location_RF_ROC2(sig_AUC_stable&Sel_All),MarkerSize,'or','filled','MarkerFacecolor',colors(1,:),'MarkerEdgeColor',[0,0,0],'LineWidth', 1);
+scatter(Value_Stable_RF_ROC(sig_AUC_oneDR&Sel_All),Value_Location_RF_ROC2(sig_AUC_oneDR&Sel_All),MarkerSize,'ob','filled','MarkerFaceColor',colors(2,:),'MarkerEdgeColor',[0,0,0],'LineWidth', 1);
+scatter(Value_Stable_RF_ROC(sig_AUC_stable&sig_AUC_oneDR&Sel_All),Value_Location_RF_ROC2(sig_AUC_stable&sig_AUC_oneDR&Sel_All),MarkerSize,'om','filled','MarkerFaceColor',colors(3,:),'MarkerEdgeColor',[0,0,0],'LineWidth', 1);
+
+% Add horizontal line centered at 0.5
+plot(xlim, [0.5, 0.5], 'k--'); % 'k--' means black dashed line
+
+% Add vertical line centered at 0.5
+plot([0.5, 0.5], ylim, 'k--'); % 'k--' means black dashed line
+
+xlabel('Object Value');
+ylabel('Location Value');
+%Bottom histogram
+subplot(3,3,[6 9]); 
+hold on;
+b = barh(bin_centers(bin_centers<0.5), counts_stacked_oneDR2(bin_centers<0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = colors_onedr(1,:);  
+b(2).FaceColor = 'w';  
+
+b = barh(bin_centers(bin_centers>0.5), counts_stacked_oneDR2(bin_centers>0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = colors_onedr(2,:);  
+b(2).FaceColor = 'w';  
+ylim([0,1]);
+
+%keyboard
+
+
+    if PlotAll==1
+%% Figures
+%% First,focus on contralateral stimulus
+FigureStartNum = FigureStartNum+1;
+FigureIndex=FigureIndex+1;
+figtitlestr{FigureIndex}='Proportion_Of_SignificantUnits_FEF_Stable_Contra';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1000,600],'Name',figtitlestr{FigureIndex});
+
+
+%figure
+
+plot(PSTH_Time_TgtOn_stable,Prop_TgtOn_Value_RF_All,'-r','LineWidth',3);
+
+%plot(PSTH_Time_TgtOn_stable,Prop_TgtOn_Value_nonRF,'-b','LineWidth',3);
+xlabel('Time from target onset (ms)');
+ylabel('Proportion of significant neurons');
+set(gca,'FontSize',15,'FontWeight','Bold','LineWidth',3);
+title('Object Value');
+ylim([0,0.35]);
+box off;
+
+
+
+
+
+
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='Proportion_Of_SignificantUnits_FEF_OneDR_Contra';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 1000,600],'Name',figtitlestr{FigureIndex});
+
+%figure
+plot(PSTH_Time_TgtOn_OneDR,Prop_TgtOn_Value_RF_oneDR_All,'-r','Color','#785EF0','LineWidth',3);
+
+%plot(PSTH_Time_TgtOn_OneDR,Prop_TgtOn_Value_nonRF_oneDR,'-b');
+set(gca,'FontSize',15,'FontWeight','Bold','LineWidth',3);
+xlabel('Time from target onset (ms)');
+ylabel('Proportion of significant neurons');
+title('Location value');
+
+ylim([0,0.35]);
+box off;
+
+
+
+
+
+
+
+
+
+%keyboard
+
+%% Population Average of PSTH_Stable_separate
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PSTH_Stable_RF';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+subplot(1,2,1)
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Mean,PSTH_TgtOn_Good_RF_Stable_GoodPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Mean,PSTH_TgtOn_Bad_RF_Stable_GoodPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3);
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('High value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+subplot(1,2,2)
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Good_RF_Stable_BadPrefer_Mean,PSTH_TgtOn_Good_RF_Stable_BadPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_stable,PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Mean,PSTH_TgtOn_Bad_RF_Stable_BadPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3);
+ set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+ xlabel('Time from target onset (ms)');
+ title('Low value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+
+%% Passive view
+
+
+%Population average psth
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PSTH_PV_RF';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+
+subplot(1,2,1)
+shadedErrorBar(Time_TgtOn_PV,PSTH_TgtOn_Good_RF_PV_Sig_Good_Mean,PSTH_TgtOn_Good_RF_PV_Sig_Good_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(Time_TgtOn_PV,PSTH_TgtOn_Bad_RF_PV_Sig_Good_Mean,PSTH_TgtOn_Bad_RF_PV_Sig_Good_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('High value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+subplot(1,2,2)
+shadedErrorBar(Time_TgtOn_PV,PSTH_TgtOn_Good_RF_PV_Sig_Bad_Mean,PSTH_TgtOn_Good_RF_PV_Sig_Bad_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(Time_TgtOn_PV,PSTH_TgtOn_Bad_RF_PV_Sig_Bad_Mean,PSTH_TgtOn_Bad_RF_PV_Sig_Bad_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('Low value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+%Population average psth
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PSTH_OneDR_RF';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+
+subplot(1,2,1)
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Mean ,PSTH_TgtOn_Good_RF_OneDR_GoodPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Mean ,PSTH_TgtOn_Bad_RF_OneDR_GoodPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('High value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+subplot(1,2,2)
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Mean ,PSTH_TgtOn_Good_RF_OneDR_BadPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Mean ,PSTH_TgtOn_Bad_RF_OneDR_BadPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+xlabel('Time from target onset (ms)');
+ ylabel('z-score');
+ title('Low value prefer');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+%% AUC as time
+% Stable 
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUC_PSTH_stable';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Mean,AUCPSTH_TgtOn_Value_RF_stable_GoodPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Mean,AUCPSTH_TgtOn_Value_RF_stable_BadPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'HighValuePrefer','LowValuePrefer'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Stable Value');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+xlim([-200])
+
+
+%OneDR
+
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUC_PSTH_oneDR';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+
+
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Mean,AUCPSTH_TgtOn_Value_RF_oneDR_GoodPrefer_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Mean,AUCPSTH_TgtOn_Value_RF_oneDR_BadPrefer_Sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'High Value Prefer','Low Value Prefer'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ 
+ title('Location Value');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+ylim([0.5,0.7]);
+
+
+% Passive Viewing 
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUC_PSTH_PV';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 400,600],'Name',figtitlestr{FigureIndex});
+
+
+
+shadedErrorBar(Time_TgtOn_PV,AUCPSTH_TgtOn_RF_PV_Sig_Good_mean,AUCPSTH_TgtOn_RF_PV_Sig_Good_sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3)
+hold on
+shadedErrorBar(Time_TgtOn_PV,AUCPSTH_TgtOn_RF_PV_Sig_Bad_mean,AUCPSTH_TgtOn_RF_PV_Sig_Good_sem,'lineProps',{[0    0    1]},'transparent',1,'patchSaturation',0.3)
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'High Value Prefer','Lowe Value Prefer'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Passive Viewing Task');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+% ROC scatter plot, location value baseline
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUC_Scatter_StableOneDR';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+%
+
+%Top histogram
+subplot(3,3,[1 2]); 
+hold on;
+b = bar(bin_centers(bin_centers<0.5), counts_stacked_stable(bin_centers<0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = 'b';  
+b(2).FaceColor = 'w';  
+hold on
+b = bar(bin_centers(bin_centers>0.5), counts_stacked_stable(bin_centers>0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = 'r';  
+b(2).FaceColor = 'w';  
+
+%Scatter plot
+subplot(3,3,[4 5 7 8]);
+scatter(Value_Stable_RF_ROC_all,Value_oneDR_RF_ROC_all,'or');
+hold on
+scatter(Value_Stable_RF_ROC(sig_AUC_stable&Sel_All),Value_Location_RF_ROC(sig_AUC_stable&Sel_All),'or','filled');
+scatter(Value_Stable_RF_ROC(sig_AUC_oneDR&Sel_All),Value_Location_RF_ROC(sig_AUC_oneDR&Sel_All),'ob','filled');
+scatter(Value_Stable_RF_ROC(sig_AUC_stable&sig_AUC_oneDR&Sel_All),Value_Location_RF_ROC(sig_AUC_stable&sig_AUC_oneDR&Sel_All),'om','filled');
+
+% Add horizontal line centered at 0.5
+plot(xlim, [0.5, 0.5], 'k--'); % 'k--' means black dashed line
+
+% Add vertical line centered at 0.5
+plot([0.5, 0.5], ylim, 'k--'); % 'k--' means black dashed line
+
+xlabel('Object Value');
+ylabel('Location Value');
+%Bottom histogram
+subplot(3,3,[6 9]); 
+hold on;
+b = barh(bin_centers(bin_centers<0.5), counts_stacked_oneDR(bin_centers<0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = 'b';  
+b(2).FaceColor = 'w';  
+
+b = barh(bin_centers(bin_centers>0.5), counts_stacked_oneDR(bin_centers>0.5,:), 'stacked');
+
+% Set custom face colors
+b(1).FaceColor = 'r';  
+b(2).FaceColor = 'w';  
+
+
+%}
+
+
+
+%keyboard
+
+% AUC_PSTH_StableOnly
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUCPSTH_stable_Abs_stableOnly';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_stable_Abs_stableOnly_Mean,AUCPSTH_stable_Abs_stableOnly_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_oneDR_Abs_stableOnly_Mean,AUCPSTH_oneDR_Abs_stableOnly_Sem,'lineProps',{[0    1    0]},'transparent',1,'patchSaturation',0.3)
+
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'ObjectValue','LocationValue'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('ObjectValue Only');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+ % AUC_PSTH_OneDROnly
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUCPSTH_stable_Abs_oneDROnly';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_stable_Abs_oneDROnly_Mean,AUCPSTH_stable_Abs_oneDROnly_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_oneDR_Abs_oneDROnly_Mean,AUCPSTH_oneDR_Abs_oneDROnly_Sem,'lineProps',{[0    1    0]},'transparent',1,'patchSaturation',0.3)
+
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'ObjectValue','LocationValue'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Location Value Only');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+  % AUC_PSTH_BothConsistent
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUCPSTH_stable_Abs_BothConsistent';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_stable_Abs_BothConsistent_Mean,AUCPSTH_stable_Abs_BothConsistent_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_oneDR_Abs_BothConsistent_Mean,AUCPSTH_oneDR_Abs_BothConsistent_Sem,'lineProps',{[0    1    0]},'transparent',1,'patchSaturation',0.3)
+
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'ObjectValue','LocationValue'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Both Value Consistent');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+ % AUC_PSTH_BothInConsistent
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUCPSTH_stable_Abs_BothInConsistent';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_stable_Abs_BothInConsistent_Mean,AUCPSTH_stable_Abs_BothInConsistent_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_oneDR_Abs_BothInConsistent_Mean2,AUCPSTH_oneDR_Abs_BothInConsistent_Sem2,'lineProps',{[0    1    0]},'transparent',1,'patchSaturation',0.3)
+
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'ObjectValue','LocationValue'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Both Value InConsistent');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+%AUCPSTH_Both 
+
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='AUCPSTH_stable_Abs_BothInConsistent';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+shadedErrorBar(PSTH_Time_TgtOn_stable,AUCPSTH_stable_Abs_Both_Mean,AUCPSTH_stable_Abs_Both_Sem,'lineProps',{[1    0    0]},'transparent',1,'patchSaturation',0.3);
+hold on
+shadedErrorBar(PSTH_Time_TgtOn_OneDR,AUCPSTH_oneDR_Abs_Both_Mean,AUCPSTH_oneDR_Abs_Both_Sem,'lineProps',{[0    1    0]},'transparent',1,'patchSaturation',0.3)
+
+
+set(findall(gca, 'Type', 'Line'),'LineWidth',3);
+legend({'ObjectValue','LocationValue'});
+xlabel('Time from target onset (ms)');
+ ylabel('AUC');
+ title('Both Value(All)');
+ set(gca,'LineWidth',3,'FontSize',15,'FontWeight','Bold');
+
+
+
+
+
+ %Pie Plot
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PiePlot_FourCategories';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+%{
+ values = [StableValueOnly_Num, OneDROnly_Num, ...
+          BothValueConsistent_Num, BothValueInConsistent_Num, NoneValue_Num];
+
+
+ labels = {'ObjectOnly', 'OneDROnly',  ...
+          'BothConsistent', 'BothInConsistent', 'None'};
+%}
+ values = [StableValueOnly_Num, OneDROnly_Num, ...
+          BothValue_Num, NoneValue_Num];
+
+ labels = {'ObjectOnly', 'OneDROnly',  ...
+          'Both', 'None'};
+
+
+
+ pie(values, labels);
+
+
+ %PiePlot for both value
+ FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='PiePlot_BothValue';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+
+%{
+ values = [StableValueOnly_Num, OneDROnly_Num, ...
+          BothValueConsistent_Num, BothValueInConsistent_Num, NoneValue_Num];
+
+
+ labels = {'ObjectOnly', 'OneDROnly',  ...
+          'BothConsistent', 'BothInConsistent', 'None'};
+%}
+ values = [
+          BothValueConsistent_Num, BothValueInConsistent_Num];
+
+ labels = {'Consistent','InConsistent'};
+
+
+ pie(values, labels);
+
+ %Scatter plot for both objects
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='ScatterPlots_Both';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+ 
+scatter(Absolute_ROC_stable_BothConsistent,Absolute_ROC_oneDR_BothConsistent,'or','filled')
+hold on 
+scatter(Absolute_ROC_stable_BothInConsistent,Absolute_ROC_oneDR_BothInConsistent,'ob','filled')
+%Fittings
+% Fit a line for "Both Consistent"
+p_consistent = polyfit(Absolute_ROC_stable_BothConsistent, Absolute_ROC_oneDR_BothConsistent, 1);
+x_fit_consistent = linspace(min(Absolute_ROC_stable_BothConsistent), max(Absolute_ROC_stable_BothConsistent), 100);
+y_fit_consistent = polyval(p_consistent, x_fit_consistent);
+plot(x_fit_consistent, y_fit_consistent, '-r', 'LineWidth', 2); % Red line for consistent group
+
+% Fit a line for "Both Inconsistent"
+p_inconsistent = polyfit(Absolute_ROC_stable_BothInConsistent, Absolute_ROC_oneDR_BothInConsistent, 1);
+x_fit_inconsistent = linspace(min(Absolute_ROC_stable_BothInConsistent), max(Absolute_ROC_stable_BothInConsistent), 100);
+y_fit_inconsistent = polyval(p_inconsistent, x_fit_inconsistent);
+plot(x_fit_inconsistent, y_fit_inconsistent, '-b', 'LineWidth', 2); % Blue line for inconsistent group
+
+% Labels and title
+xlabel('Absolute ROC Stable');
+ylabel('Absolute ROC OneDR');
+title('Scatter Plot for neurons modulated both values');
+legend({'Consistent', 'Both Inconsistent', 'Fit: Consistent', 'Fit: Inconsistent'}, 'Location', 'best');
+
+
+xlabel('Object abs AUC');
+ylabel('Location abs AUC');
+legend({'Cons','InConsis'})
+
+%%
+%Scatter plot for both objects2, oneDR based on location
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='ScatterPlots_Both2';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+ 
+scatter(Absolute_ROC_stable_BothConsistent2,Absolute_ROC_oneDR_BothConsistent2,100,'ob','filled','MarkerEdgeColor',[0,0,0],'LineWidth',2)
+hold on 
+scatter(Absolute_ROC_stable_BothInConsistent2,Absolute_ROC_oneDR_BothInConsistent2,100,'og','filled','MarkerEdgeColor',[0,0,0],'LineWidth',2)
+%Fittings
+% Fit a line for "Both Consistent"
+p_consistent = polyfit(Absolute_ROC_stable_BothConsistent2, Absolute_ROC_oneDR_BothConsistent2, 1);
+x_fit_consistent = linspace(min(Absolute_ROC_stable_BothConsistent2), max(Absolute_ROC_stable_BothConsistent2), 100);
+y_fit_consistent = polyval(p_consistent, x_fit_consistent);
+plot(x_fit_consistent, y_fit_consistent, '-r', 'LineWidth', 2); % Red line for consistent group
+[r_consistent2,p_consistent2] = corr(Absolute_ROC_stable_BothConsistent2', Absolute_ROC_oneDR_BothConsistent2','Type', 'Pearson');
+
+%r_consistent2
+%p_consistent2
+
+% Fit a line for "Both Inconsistent"
+p_inconsistent = polyfit(Absolute_ROC_stable_BothInConsistent2, Absolute_ROC_oneDR_BothInConsistent2, 1);
+x_fit_inconsistent = linspace(min(Absolute_ROC_stable_BothInConsistent2), max(Absolute_ROC_stable_BothInConsistent2), 100);
+y_fit_inconsistent = polyval(p_inconsistent, x_fit_inconsistent);
+plot(x_fit_inconsistent, y_fit_inconsistent, '-b', 'LineWidth', 2); % Blue line for inconsistent group
+
+[r_inconsistent2,p_inconsistent2] = corr(Absolute_ROC_stable_BothInConsistent2', Absolute_ROC_oneDR_BothInConsistent2','Type', 'Pearson');
+
+
+% Labels and title
+xlabel('Absolute ROC Stable');
+ylabel('Absolute ROC OneDR');
+title('Scatter Plot for neurons modulated both values');
+legend({'Consistent', 'Both Inconsistent', 'Fit: Consistent', 'Fit: Inconsistent'}, 'Location', 'best');
+
+
+xlabel('Object abs AUC');
+ylabel('Location abs AUC');
+legend({'Cons','InConsis'})
+
+
+
+
+
+%%
+%Scatter plot for both objects3, remove bad prefer in oneDR
+FigureStartNum = FigureStartNum+1;
+FigureIndex = FigureIndex+1;
+figtitlestr{FigureIndex}='ScatterPlots_Both3';
+fig{FigureIndex}=PrepareFigure(FigureStartNum,'w',[50,100, 600,600],'Name',figtitlestr{FigureIndex});
+ 
+scatter(Absolute_ROC_stable_BothConsistent3,Absolute_ROC_oneDR_BothConsistent3,100,'ob','filled','MarkerEdgeColor',[0,0,0])
+hold on 
+scatter(Absolute_ROC_stable_BothInConsistent3,Absolute_ROC_oneDR_BothInConsistent3,100,'og','filled','MarkerEdgeColor',[0,0,0])
+%Fittings
+% Fit a line for "Both Consistent"
+p_consistent = polyfit(Absolute_ROC_stable_BothConsistent3, Absolute_ROC_oneDR_BothConsistent3, 1);
+x_fit_consistent = linspace(min(Absolute_ROC_stable_BothConsistent3), max(Absolute_ROC_stable_BothConsistent3), 100);
+y_fit_consistent = polyval(p_consistent, x_fit_consistent);
+plot(x_fit_consistent, y_fit_consistent, '-r', 'LineWidth', 2); % Red line for consistent group
+[r_consistent3,p_consistent3] = corr(Absolute_ROC_stable_BothConsistent3', Absolute_ROC_oneDR_BothConsistent3','Type', 'Pearson');
+
+%r_consistent2
+%p_consistent2
+
+% Fit a line for "Both Inconsistent"
+p_inconsistent = polyfit(Absolute_ROC_stable_BothInConsistent3, Absolute_ROC_oneDR_BothInConsistent3, 1);
+x_fit_inconsistent = linspace(min(Absolute_ROC_stable_BothInConsistent3), max(Absolute_ROC_stable_BothInConsistent3), 100);
+y_fit_inconsistent = polyval(p_inconsistent, x_fit_inconsistent);
+plot(x_fit_inconsistent, y_fit_inconsistent, '-b', 'LineWidth', 2); % Blue line for inconsistent group
+
+[r_inconsistent3,p_inconsistent3] = corr(Absolute_ROC_stable_BothInConsistent3', Absolute_ROC_oneDR_BothInConsistent3','Type', 'Pearson');
+
+
+% Labels and title
+xlabel('Absolute ROC Stable');
+ylabel('Absolute ROC OneDR');
+title('Scatter Plot for neurons modulated both values');
+legend({'Consistent', 'Both Inconsistent', 'Fit: Consistent', 'Fit: Inconsistent'}, 'Location', 'best');
+
+
+xlabel('Object abs AUC');
+ylabel('Location abs AUC');
+legend({'Cons','InConsis'})
+
+    end
+%{
+figure
+subplot(1,2,1)
+plot(AUCPSTH_stable_Abs_stableOnly_Mean)
+subplot(1,2,2)
+plot(AUCPSTH_oneDR_Abs_stableOnly_Mean)
+
+figure
+subplot(1,2,1)
+plot(AUCPSTH_stable_Abs_oneDROnly_Mean)
+subplot(1,2,2)
+plot(AUCPSTH_oneDR_Abs_oneDROnly_Mean)
+
+figure
+subplot(1,2,1)
+plot(AUCPSTH_stable_Abs_BothConsistent_Mean)
+subplot(1,2,2)
+plot(AUCPSTH_oneDR_Abs_BothConsistent_Mean)
+
+figure
+subplot(1,2,1)
+plot(AUCPSTH_stable_Abs_BothInConsistent_Mean)
+subplot(1,2,2)
+plot(AUCPSTH_oneDR_Abs_BothInConsistent_Mean)
+
+
+%keyboard
+%}
+end
+
+if OutputFlag == 1
+
+%% Output to files
+%Setup output directory
+Workingdirectory=pwd;
+MarkerFolder='DataAnalysis';
+%MarkerFolder='DataHub';
+Flag=strfind(Workingdirectory,MarkerFolder);
+BasicDirectory=Workingdirectory(1:Flag+length(MarkerFolder));
+
+
+%%%%%%%%%%%Export data%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Set up output path
+%OutputFolerName='ForagingTask';
+%OutPath=strcat(BasicDirectory,'Results',BasicDirectory(end),'ExportFigure',BasicDirectory(end));%,OutputFolerName);
+OutPath=strcat(BasicDirectory,'Results',BasicDirectory(end),'ExportFigure_Poster',BasicDirectory(end));%,OutputFolerName);
+if ~exist(OutPath)
+    mkdir(OutPath)
+end
+cd(OutPath);
+
+OutputFigureName='SC_StableOneDR_Neural_';
+
+
+for jj=1:FigureIndex
+        if ~isempty(fig{jj})
+        
+
+         OutputFigureName_Final=strcat(OutputFigureName,figtitlestr{jj},'.pdf');
+         saveas(fig{jj},OutputFigureName_Final);
+        end
+        
+            
+end
+
+    disp('Figures have been exported to the exported folder');
+
+
+
+end %End of if outputFlag == 1
+
+
+
+end

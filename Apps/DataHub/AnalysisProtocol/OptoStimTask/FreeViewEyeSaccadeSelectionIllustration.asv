@@ -1,0 +1,193 @@
+function  FreeViewEyeSaccadeSelectionIllustration(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+
+
+ECode;
+
+TaskType=Data.TaskType;
+DataPath= Data.Path;
+FileName=Data.FileName;
+TaskCode=Data.TaskCode;
+
+
+if FileName(1)=='R'
+    Monkey = 1;
+else
+    Monkey = 2;
+end
+
+
+Selection=StartTrial:EndTrial;%Select the trials according to the pannel
+
+%Criterias for sexwlecting saccades
+V_Threshold=40;
+ContinueBin=5;
+ISI_Threshold=20;
+
+%User handler
+PlotExample = 1;%For plotting the raw for example, not needed for every session
+%GetEyeData
+EyeData=Data.EyeDataRaw;
+EyeChannel_X_L=EyeData(Selection,1);
+EyeChannel_Y_L=EyeData(Selection,2);
+%EyeChannel_X_R=EyeData(Selection,3);
+%EyeChannel_Y_R=EyeData(Selection,4);
+Eye_Eccentricity=cellfun(@(x,y) sqrt(x.^2+y.^2),EyeChannel_X_L,EyeChannel_Y_L,'uniform',0);
+
+
+
+
+EyeBinWidth=Data.EyeBinWidth;
+EyeCalInfo=Data.EyeCalInfo;%Each row: X_Gain,X_Bias; Y_Gain; Y_bias; X=(raw+X_bias)*X_Gain
+EyeCalInfo_L=EyeCalInfo(1,:);
+
+EyeTime = 0: EyeBinWidth:max(cellfun(@numel,EyeChannel_X_L))-EyeBinWidth;
+
+
+
+%Plot by time
+EyeChannel_X_Line = cell2mat(reshape(EyeChannel_X_L,1,numel(EyeChannel_X_L)));
+EyeChannel_Y_Line = cell2mat(reshape(EyeChannel_Y_L,1,numel(EyeChannel_Y_L)));
+
+EyeTime_Line = 0: EyeBinWidth:length(EyeChannel_X_Line)-EyeBinWidth;
+
+
+SelectT = EyeTime_Line>15000 & EyeTime_Line<000;
+Eye_X_SelectT = EyeChannel_X_Line(SelectT);
+Eye_Y_SelectT = EyeChannel_Y_Line(SelectT);
+
+Saccades=SelectSaccade(Eye_X_SelectT ,Eye_Y_SelectT ,EyeBinWidth,V_Threshold,ContinueBin,ISI_Threshold);
+
+%SaccadeNumber=arrayfun(@(x)  x.NumOfSaccade,Saccades)';
+SaccadeAngle=cell2mat(arrayfun(@(x)  x.SaccadeAngle,Saccades,'UniformOutput' ,0)');
+SaccadeAmplitude=cell2mat(arrayfun(@(x)  x.SaccadeAmplitude,Saccades,'UniformOutput' ,0)');
+
+SaccadeStartTime_ori=cell2mat(arrayfun(@(x)  x.SaccadeStartTime,Saccades,'UniformOutput' ,0)');
+SaccadeEndTime_ori=cell2mat(arrayfun(@(x)  x.SaccadeEndTime,Saccades,'UniformOutput' ,0)');
+
+SaccadeStartPoint=cell2mat(arrayfun(@(x)  x.SaccadeStartPoint,Saccades,'UniformOutput' ,0)');
+SaccadeEndPoint=cell2mat(arrayfun(@(x)  x.SaccadeEndPoint,Saccades,'UniformOutput' ,0)');
+Sac_V = cell2mat(arrayfun(@(x)  x.PeakV,Saccades,'UniformOutput' ,0)');
+
+SelectSac = SaccadeAmplitude> 5 & SaccadeAmplitude< 40 & Sac_V<1000;
+Num = sum(SelectSac);
+SaccadeAngle_Sel =SaccadeAngle(SelectSac);
+SaccadeAmp_Sel =SaccadeAmplitude(SelectSac);
+Sac_StartT = SaccadeStartTime_ori(SelectSac,:);
+Sac_EndT = SaccadeEndTime_ori(SelectSac,:);
+Sac_StartPoint = SaccadeStartPoint(SelectSac,:);
+Sac_EndPoint = SaccadeEndPoint(SelectSac,:);
+
+figure
+%set(gca,'Color',[0.3,0.3,0.3]);
+plot(Eye_X_SelectT,Eye_Y_SelectT,'-k','LineWidth',3);
+hold on
+for i = 1:Num
+    
+    plot(Eye_X_SelectT(Sac_StartT(i):Sac_EndT(i)),Eye_Y_SelectT(Sac_StartT(i):Sac_EndT(i)),'-r','LineWidth',3);
+    hold on
+end
+
+xlim([-40,40]);
+ylim([-40,40]);
+
+
+
+
+
+
+
+keyboard
+
+
+
+%Plot by trial
+
+EyeChannel_X_Task=cell2mat(cellfun(@(x) x(1:2000),EyeChannel_X_L,'UniformOutput',false));
+EyeChannel_Y_Task=cell2mat(cellfun(@(x) x(1:2000),EyeChannel_Y_L,'UniformOutput',false));
+
+
+
+
+
+Trial =45;
+Select = EyeTime>0 & EyeTime<2000;
+Eye_X_Select = EyeChannel_X_Task(Trial,Select);
+Eye_Y_Select = EyeChannel_Y_Task(Trial,Select);
+
+
+
+
+Saccades=SelectSaccade(Eye_X_Select ,Eye_Y_Select ,EyeBinWidth,V_Threshold,ContinueBin,ISI_Threshold);
+
+%SaccadeNumber=arrayfun(@(x)  x.NumOfSaccade,Saccades)';
+SaccadeAngle=cell2mat(arrayfun(@(x)  x.SaccadeAngle,Saccades,'UniformOutput' ,0)');
+SaccadeAmplitude=cell2mat(arrayfun(@(x)  x.SaccadeAmplitude,Saccades,'UniformOutput' ,0)');
+
+SaccadeStartTime_ori=cell2mat(arrayfun(@(x)  x.SaccadeStartTime,Saccades,'UniformOutput' ,0)');
+SaccadeEndTime_ori=cell2mat(arrayfun(@(x)  x.SaccadeEndTime,Saccades,'UniformOutput' ,0)');
+
+SaccadeStartPoint=cell2mat(arrayfun(@(x)  x.SaccadeStartPoint,Saccades,'UniformOutput' ,0)');
+SaccadeEndPoint=cell2mat(arrayfun(@(x)  x.SaccadeEndPoint,Saccades,'UniformOutput' ,0)');
+Sac_V = cell2mat(arrayfun(@(x)  x.PeakV,Saccades,'UniformOutput' ,0)');
+
+SelectSac = SaccadeAmplitude> 5 & SaccadeAmplitude< 40;
+Num = sum(SelectSac);
+SaccadeAngle_Sel =SaccadeAngle(SelectSac);
+SaccadeAmp_Sel =SaccadeAmplitude(SelectSac);
+Sac_StartT = SaccadeStartTime_ori(SelectSac,:);
+Sac_EndT = SaccadeEndTime_ori(SelectSac,:);
+Sac_StartPoint = SaccadeStartPoint(SelectSac,:);
+Sac_EndPoint = SaccadeEndPoint(SelectSac,:);
+
+
+figure
+%set(gca,'Color',[0.3,0.3,0.3]);
+plot(Eye_X_Select,Eye_Y_Select,'-k','LineWidth',3);
+hold on
+for i = 1:Num
+    
+    plot(Eye_X_Select(Sac_StartT(i):Sac_EndT(i)),Eye_Y_Select(Sac_StartT(i):Sac_EndT(i)),'-r','LineWidth',3);
+    hold on
+end
+
+xlim([-40,40]);
+ylim([-40,40]);
+
+
+
+
+
+end
+
+function organized=ReorganizeEye(data);
+organized=[];
+for i=1:length(data)
+    data_curr=data{i};
+    maxnumel=max(cellfun(@numel,data_curr));
+    organized{i}=cell2mat(cellfun(@(x) [x,NaN*ones(1,maxnumel-length(x))],data_curr,'uniform',0));
+    
+end
+
+ maxnumel=max(cellfun(@(x) size(x,2),organized));
+  organized=cell2mat(cellfun(@(x) [x,NaN*ones(size(x,1),maxnumel-size(x,2))],organized,'uniform',0)');
+
+end
+
+function ObjectIndex=ReproduceFromEvent(event,code)
+for i=1:size(event,1)
+    
+    ObjectIndex{i}=event(i,ismember(event(i,:),code));
+    
+  
+    
+end
+numeach=cellfun(@numel,ObjectIndex);
+nummax=max(numeach);
+if nummax==1
+    ObjectIndex=cell2mat(ObjectIndex);
+
+    
+end
+
+
+end

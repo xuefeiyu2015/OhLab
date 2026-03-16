@@ -1,0 +1,83 @@
+function [reISI,reISISeq] = ISIInInterval(interval,time,bin);
+
+
+
+MaxSampleBin = ceil(max(interval(:,2) -interval(:,1)));
+reISI = NaN* ones(size(interval,1),MaxSampleBin);
+MaxTimeBin = ceil(MaxSampleBin/bin);
+reISISeq = NaN*ones(size(interval,1),MaxTimeBin);
+time = time(:,1:end-2);
+
+
+for i = 1:size(interval,1)
+    val = interval(i,:);
+    sel = time(i,:) < val(2) & time(i,:) >= val(1);
+
+    SampleBin = ceil(diff(val));
+    timeBin = floor(SampleBin/bin);
+    if sum(sel) >0
+        
+        isi = 1./diff(time(i,:))*1000;
+        isi = [isi,NaN];
+        fillzero = find(isnan(isi) == 1,1,'first');
+        
+        
+        for j = 1:SampleBin
+            interval_j = val(1) + j -1: val(1) + j;
+            spk_time_j = time(i,:) < interval_j(2) & time(i,:) >= interval_j(1);
+            loc = find(spk_time_j == 1,1,'first');
+            
+            
+            if isempty(loc)
+                %If no spike
+                if j == 1
+                    spkloc = find(sel == 1,1,'first')-1;%fill in with the last spike isi;
+                    if spkloc == 0
+                        preISI = 0;
+                    else
+                    
+                        preISI = isi(i,spkloc);
+                    end
+                    reISI(i,j) = preISI; 
+                else
+                    reISI(i,j) = reISI(j-1);
+                end
+            else
+                %if there is spike, update 1/isi
+                if isinf(isi(i,loc))
+                    isi(i,loc)=999;
+                    
+                end
+                reISI(i,j) = isi(loc);
+                
+            end
+            
+        end
+        
+        reISISeq_tmp = reshape(reISI(i,1:floor(SampleBin/bin)*bin),bin,floor(SampleBin/bin));
+        reISISeq(i,1:timeBin) = mean(reISISeq_tmp,1);
+        
+        %Plot raster with 1/ISI
+        %{
+        StartLoc = 1;
+        LineWidth = 2;
+        Barlength = 1;
+        spk_time_sel =time(i,sel);
+        figure
+        
+        hold on
+        valbin =[val(1):val(2)]+0.5;
+        plot(valbin,reISI(i,:),'-k');
+        SpikeRaterPlot(spk_time_sel,StartLoc,Barlength,'r',LineWidth);
+        ylim([0,50]);
+        %}
+
+    end
+    
+    
+    
+    
+end
+
+
+end
