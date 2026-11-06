@@ -19,10 +19,11 @@ for i=1:length(FilesName)
      
      OutputDataTemp=OutputData;
      
+     if isfield(OutputDataTemp,'StableValueBehavior')
      
      Task(i)=OutputData.StableValueBehavior.TaskCode;
      TaskName{i}=OutputData.StableValueBehavior(1).Task;
-    
+     
      
      Data =OutputData.StableValueBehavior.DataStamp;
 
@@ -32,9 +33,14 @@ for i=1:length(FilesName)
 
     RT_Good_Mean(i) = Data('RT_Good_Mean');
     RT_BadMean(i) = Data('RT_Bad_Mean');
+
+     else
+         disp(FilesName{i}{1});
+         disp('No behavior data found');
      
 
-
+end
+     
      
 end
 

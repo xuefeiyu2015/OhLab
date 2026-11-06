@@ -225,10 +225,16 @@ elseif strcmp(Protocol,'OneDRAnalysis')
     end
 elseif strcmp(Protocol,'OneDR_RT')
     if EditIndex
-        edit OneDRAnalysis.m
+        edit OneDRRT.m
     else
        OneDRRT(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
     end    
+elseif strcmp(Protocol,'ValueTaskPerformance')
+    if EditIndex
+        edit ValueTaskPerformance.m
+    else
+       ValueTaskPerformance(Data, StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
 elseif strcmp(Protocol,'VisualLatencyMeasure')
     if EditIndex
         edit VisualLatencyMeasure.m
@@ -1039,6 +1045,12 @@ elseif strcmp(Protocol,'Batch_StableValue_Behavior')
     else
         Batch_StableValue_Behavior(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
     end
+elseif strcmp(Protocol,'Batch_ObjLocValue_Behavior')
+    if EditIndex
+        edit Batch_ObjLocValue_Behavior.m
+    else
+        Batch_ObjLocValue_Behavior(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
 elseif strcmp(Protocol,'Batch_StableOneDR_Opto')
     if EditIndex
         edit Batch_StableOneDR_Opto.m
@@ -1091,7 +1103,12 @@ elseif strcmp(Protocol,'Batch_FixStimFixation')
         Batch_FixStimFixation(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
     end
 
-
+elseif strcmp(Protocol,'Batch_ObjLocValue_Organize')
+    if EditIndex
+        edit Batch_ObjLocValue_Organize.m
+    else
+        Batch_ObjLocValue_Organize(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
 
 
    

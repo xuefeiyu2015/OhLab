@@ -28,8 +28,8 @@ ExamplePlot=0;%PLots for presentations, turn off for regular use
 ResponseLatencyThreshold=3;
 
 %Parameter to define the sliding window to measure firing rates
-StepSize=5;%in ms
-BinWidth=15;%in ms
+StepSize=10;%in ms
+BinWidth=10;%in ms
 
 
 %Criterias for sexwlecting saccades
@@ -228,7 +228,7 @@ FR_Std = std(FR_Each);
 FractalOnsetBin = FindOutTime(EventChannel,EventBin,TGTCD );
 FractalOffsetBin = FindOutTime(EventChannel,EventBin,TGTOFF);
 FractalOnsetTime = FindOutTime(EventChannel,EventTimeChannel,TGTCD );
-FractalOffsetTime = FindOutTime(EventChannel,EventTimeChannel,TGTOFF );
+%FractalOffsetTime = FindOutTime(EventChannel,EventTimeChannel,TGTOFF );
 
 FixOffsetBin = FindOutTime(EventChannel,EventBin,FIXOFF);
 
@@ -406,6 +406,9 @@ MeanPSTH=SegmentData.MeanPSTH;%=[PSTH_Event_Time',PSTH_Event'];
 MeanPSTH_Time=MeanPSTH{1};
 MeanPSTH_FR_FractalOn=MeanPSTH{2};
 
+%SpikeCount
+PSTH_TgtOn_SpikeCount = SegmentData.PSTH_Event_SpikeCount{1}/(StepSize*10^-3);
+
 %Raster 
 Raster_TgtOn = SegmentData.RasterAfterAlign{1};
 
@@ -424,6 +427,12 @@ PSTH_FR_Bad_mean=nanmean(PSTH_FR_Bad,1);
 
 PSTH_FR_Good_sem=nanstd(PSTH_FR_Good,[],1)./sqrt(sum(~isnan(PSTH_FR_Good),1));
 PSTH_FR_Bad_sem=nanstd(PSTH_FR_Bad,[],1)./sqrt(sum(~isnan(PSTH_FR_Bad),1));
+
+
+
+%PSTH_SpikeCount_Good = PSTH_TgtOn_SpikeCount(GoodObjectIndex,:);
+%PSTH_SpikeCount_Bad = PSTH_TgtOn_SpikeCount(~GoodObjectIndex,:);
+
 
 %Good versus Bad raster
 %Raster_TgtOn_Good = Raster_TgtOn(GoodObjectIndex,:);
@@ -459,6 +468,7 @@ Eye_Ecc_Good_sem=nanstd(Eye_Eccentricity_FractalOn_Good,[],1)./sqrt(sum(~isnan(E
 Eye_Ecc_Bad_sem=nanstd(Eye_Eccentricity_FractalOn_Bad,[],1)./sqrt(sum(~isnan(Eye_Eccentricity_FractalOn_Bad),1));
 
 %%
+%{
 % %%%%%%%%%%%%%%%%%%%%%%%Align data on saccade offset
 
 AlignedSpike=SpikeAlignTool(SacEnd_First_Target',SpikeTimeAligned_TgtOn,StepSize,BinWidth);
@@ -499,8 +509,9 @@ EyeEcc_Aligned_SacOff_Good_sem=nanstd(EyeEcc_Aligned_SacOff(GoodObjectIndex,:),[
 
 EyeEcc_Aligned_SacOff_Bad_mean=nanmean(EyeEcc_Aligned_SacOff(~GoodObjectIndex,:),1);
 EyeEcc_Aligned_SacOff_Bad_sem=nanstd(EyeEcc_Aligned_SacOff(~GoodObjectIndex,:),[],1)./sqrt(sum(~isnan(EyeEcc_Aligned_SacOff(~GoodObjectIndex,:)),1));
-
+%}
 %%
+%{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Align eye trace on target offset
 EyeTimeII=[-PlotStartOffset:-PlotStartOffset+size(Eye_Eccentricity_FractalOn,2)-1];
 
@@ -550,7 +561,7 @@ PSTH_FracOff_Bad_sem=nanstd(PSTH_FracOff(~GoodObjectIndex,:),[],1)./sqrt(sum(~is
 
 TimeSequence_FracOff_mean=nanmean(MeanPSTH_TimeOff,1);
 
-
+%}
 
 
 %%
@@ -594,6 +605,7 @@ SaccadeStartPoint_After_First(SaccadeNumInEachTrialAfter>0,:)=cell2mat(cellfun(@
 SaccadeAmplitude_After_First(SaccadeNumInEachTrialAfter>0)=cell2mat(cellfun(@(x) x(1,:),SaccadeAmplitude_SelectionAfter(SaccadeNumInEachTrialAfter>0,:),'UniformOutput' ,0));
 %}
 
+%{
 %Align data on the return saccade onset
 %Align again on return saccade onset
 
@@ -639,10 +651,58 @@ EyeEcc_AlignedAfter_Good_sem=nanstd(EyeEcc_AlignedAfter(GoodObjectIndex,:),[],1)
 EyeEcc_AlignedAfter_Bad_mean=nanmean(EyeEcc_AlignedAfter(~GoodObjectIndex,:),1);
 EyeEcc_AlignedAfter_Bad_sem=nanstd(EyeEcc_AlignedAfter(~GoodObjectIndex,:),[],1)./sqrt(sum(~isnan(EyeEcc_AlignedAfter(~GoodObjectIndex,:)),1));
 
+%}
 
+%% Pre-allocate variables 
+nAngles = length(UniqueAngle);
+nTimeTgt = length(PSTH_Time_FraOn_All);
+nTimeSac = length(TimeSequence_SacOn_mean);
+
+% Cell arrays indexed by angle
+Good_FracOn_Loc_Mean = cell(nAngles,1);
+Good_FracOn_Loc_Sem  = cell(nAngles,1);
+Bad_FracOn_Loc_Mean  = cell(nAngles,1);
+Bad_FracOn_Loc_Sem   = cell(nAngles,1);
+AngleEccorder        = cell(nAngles,1);
+Good_SacOn_Loc_Mean  = cell(nAngles,1);
+Good_SacOn_Loc_Sem   = cell(nAngles,1);
+Bad_SacOn_Loc_Mean   = cell(nAngles,1);
+Bad_SacOn_Loc_Sem    = cell(nAngles,1);
+Raster_TgtOn_Good    = cell(nAngles,1);
+Raster_TgtOn_Bad     = cell(nAngles,1);
+Raster_SacOn_Good    = cell(nAngles,1);
+Raster_SacOn_Bad     = cell(nAngles,1);
+
+% 1D arrays indexed by angle
+p_Vis       = NaN(1, nAngles);
+Vis_Dff     = NaN(1, nAngles);
+p_pureSac   = NaN(1, nAngles);
+pureSac_Diff = NaN(1, nAngles);
+SacGood     = NaN(1, nAngles);
+SacBad      = NaN(1, nAngles);
+TgtAUC = NaN(1,nAngles);
+p_AUC_Tgt = NaN(1,nAngles);
+p_AUC_Tgt_ranksum = NaN(1,nAngles);
+
+
+       %}
+% 2D arrays (angle x time)
+p_tgttime_value_loc       = NaN(nAngles, nTimeTgt);
+h_tgttime_value_loc       = NaN(nAngles, nTimeTgt);
+h_tgttime_value_loc_good  = NaN(nAngles, nTimeTgt);
+h_tgttime_value_loc_bad   = NaN(nAngles, nTimeTgt);
+AUC_tgttime_value_loc     = NaN(nAngles, nTimeTgt);
+pAUC_tgttime_value_loc    = NaN(nAngles, nTimeTgt);
+
+p_sactime_value_loc       = NaN(nAngles, nTimeSac);
+h_sactime_value_loc       = NaN(nAngles, nTimeSac);
+h_sactime_value_loc_good  = NaN(nAngles, nTimeSac);
+h_sactime_value_loc_bad   = NaN(nAngles, nTimeSac);
+AUC_sactime_value_loc     = NaN(nAngles, nTimeSac);
+LatencyTimeAUC = NaN(1,nAngles);
 
 %% Loop over the target directions
-for i = 1:length(UniqueAngle )
+for i = 1:nAngles
    % for j = 1:length(UniqueEcc)
         sel = TargetAngle == UniqueAngle(i) ;%& TargetEcc == UniqueEcc(1);
         
@@ -657,6 +717,11 @@ for i = 1:length(UniqueAngle )
         Bad_FracOn_Loc_Sem{i,1} = nanstd(curr_BadFracOn_Loc,[],1)./sqrt(sum(~isnan(curr_BadFracOn_Loc),1));
         
         
+         PSTH_SpikeCount_Good{i,1} = nanmean(PSTH_TgtOn_SpikeCount(sel & GoodObjectIndex,:),1);
+
+         PSTH_SpikeCount_Bad{i,1} = nanmean(PSTH_TgtOn_SpikeCount(sel & ~GoodObjectIndex,:),1);
+
+
         
         AngleEccorder{i,1} = [UniqueAngle(i),UniqueEcc(1)];
         
@@ -672,18 +737,25 @@ for i = 1:length(UniqueAngle )
 
         %Average 
         %%
-       
-        TimeTgt = [100,300];
+       %
+        TimeTgt = [100,200];
         Ave_FR_TgtOn_Good = nanmean(curr_GoodFracOn_Loc(:,PSTH_Time_FraOn_All >= TimeTgt(1) & PSTH_Time_FraOn_All <= TimeTgt(2)),2);
         Ave_FR_TgtOn_Bad = nanmean(curr_BadFracOn_Loc(:,PSTH_Time_FraOn_All >= TimeTgt(1) & PSTH_Time_FraOn_All <= TimeTgt(2)),2);
 
         TimeSac = [-200,0];
         N = 100;
-        permuteN = 100;
+        permuteN = 1000;
 
-        [TgtAUC(i,1),bestz,perm] = rocN(Ave_FR_TgtOn_Good,Ave_FR_TgtOn_Bad,N,permuteN);
-        p_AUC_Tgt(i,1) = perm.pValue;
-
+        [TgtAUC(i),bestz,perm] = rocN(Ave_FR_TgtOn_Good,Ave_FR_TgtOn_Bad,N,permuteN);
+        p_AUC_Tgt(i) = perm.pValue;
+        try
+        p_AUC_Tgt_ranksum(i) = ranksum(Ave_FR_TgtOn_Good, Ave_FR_TgtOn_Bad);
+        catch
+            p_AUC_Tgt_ranksum(i)=NaN;
+        end
+            
+        
+       %}
         %For visual responses
         VisTgt = [60,200];
         Ave_FR_TgtOn_Vis = nanmean(currFracOn_Loc(:,PSTH_Time_FraOn_All >= VisTgt(1) & PSTH_Time_FraOn_All <= VisTgt(2)),2);
@@ -695,11 +767,15 @@ for i = 1:length(UniqueAngle )
         [h,p_Vis(i)]= ttest(Ave_FR_TgtOn_Vis ,Ave_FR_TgtOn_Spon);
         Vis_Dff(i) = mean(Ave_FR_TgtOn_Vis)-mean(Ave_FR_TgtOn_Spon)';
 
+        %{
         Ave_FR_SacOn_Good = nanmean(curr_GoodSacOn_Loc(:,TimeSequence_SacOn_mean >= TimeSac(1) & TimeSequence_SacOn_mean <= TimeSac(2)),2);
         Ave_FR_SacOn_Bad = nanmean(curr_BadSacOn_Loc(:,TimeSequence_SacOn_mean >= TimeSac(1) & TimeSequence_SacOn_mean <= TimeSac(2)),2);
     
         [h,p_Tgt(i)]= ttest2(Ave_FR_TgtOn_Good,Ave_FR_TgtOn_Bad);
         [h,p_Sac(i)]= ttest2(Ave_FR_SacOn_Good,Ave_FR_SacOn_Bad);
+
+        %}
+
 
         %For saccade responses 
 
@@ -710,7 +786,7 @@ for i = 1:length(UniqueAngle )
 
         [h,p_pureSac(i)]= ttest(Ave_FR_SacOn,Ave_FR_TgtOn_Spon);
         pureSac_Diff(i) = mean(Ave_FR_SacOn)-mean(Ave_FR_TgtOn_Spon)';
-
+%{
         %% Ave
         %Average every 100ms
         index_i = 1;
@@ -720,7 +796,7 @@ for i = 1:length(UniqueAngle )
             Ave_FR_TgtOn_Bad_Interval = nanmean(curr_BadFracOn_Loc(:,time_interval),2);
 
             N = 100;
-        permuteN = 100;
+        permuteN = 1000;
 
         [TgtAUC_interval(i,index_i),bestz,perm] = rocN(Ave_FR_TgtOn_Good_Interval,Ave_FR_TgtOn_Bad_Interval ,N,permuteN);
         p_AUC_Tgt_interval(i,index_i)= perm.pValue;
@@ -768,14 +844,15 @@ for i = 1:length(UniqueAngle )
 
            
         end
-       
+%} 
+        %{
 
-        TgtGood(i) = mean(Ave_FR_TgtOn_Good);
-        TgtBad(i) = mean(Ave_FR_TgtOn_Bad);
+        %TgtGood(i) = mean(Ave_FR_TgtOn_Good);
+        %TgtBad(i) = mean(Ave_FR_TgtOn_Bad);
 
         SacGood(i) = mean(Ave_FR_SacOn_Good);
         SacBad(i) = mean(Ave_FR_SacOn_Bad);
-
+        %}
         %Raster
         Raster_TgtOn_Good{i}=Raster_TgtOn(sel & GoodObjectIndex,:);
         Raster_TgtOn_Bad{i}=Raster_TgtOn(sel & ~GoodObjectIndex,:);
@@ -785,6 +862,8 @@ for i = 1:length(UniqueAngle )
 
 
         %Time sequence comparison
+       % N = 100;
+        %permuteN = 100; %100 for a test
         % for tgt onset
         for m = 1:length(PSTH_Time_FraOn_All)
             good_tgt=curr_GoodFracOn_Loc(:,m);
@@ -799,11 +878,107 @@ for i = 1:length(UniqueAngle )
             h_tgttime_value_loc_good(i,m) = goodpreferindex & h_tgttime_value_loc(i,m);
             h_tgttime_value_loc_bad(i,m) = ~goodpreferindex & h_tgttime_value_loc(i,m);
 
-            AUC_tgttime_value_loc(i,m) = rocN(good_tgt,bad_tgt);
+             
+            [AUC_tgttime_value_loc(i,m),~,perm] = rocN(good_tgt,bad_tgt,N,permuteN);
+            pAUC_tgttime_value_loc(i,m) = perm.pValue;
+
+       valid_g = ~isnan(good_tgt);
+       valid_b =  ~isnan(bad_tgt);
+       if sum(valid_g)>3 & sum(valid_b) >3
+           pAUC_tgttime_value_loc_ranksum(i,m) = ranksum(good_tgt(valid_g),bad_tgt(valid_b));
+       else
+
+            pAUC_tgttime_value_loc_ranksum(i,m) = NaN;
+       end
+
+
             
 
 
         end
+
+
+
+        %% peakAUC / peakTime / p_peakAUC / LatencyTimeAUC — commented out
+        %{
+        %% Implemented: smooth AUC across time, find peak, average ±50 ms window
+         %Select the focus time window
+         TimeWindowForROC = [-500, 400];%in ms
+
+        %Step1 further smooth with a guassian kernel
+            sigma_ms = 30;               % smoothing sigma (ms)
+            dt = mean(diff(PSTH_Time_FraOn_All)); % time step (ms)
+            smoothSigma = sigma_ms;       % GaussSmooth expects sigma in same units as time axis
+            auc_sm = GaussSmooth(PSTH_Time_FraOn_All, AUC_tgttime_value_loc(i,:), smoothSigma);
+
+            %Find max peak within perticular time window
+            auc_sm_sel = auc_sm(PSTH_Time_FraOn_All>=TimeWindowForROC(1) & PSTH_Time_FraOn_All<=TimeWindowForROC(2));
+            Time_FracOn_Sel = PSTH_Time_FraOn_All(PSTH_Time_FraOn_All>=TimeWindowForROC(1) & PSTH_Time_FraOn_All<=TimeWindowForROC(2));
+
+            %Find the peaktime
+            % Use max absolute deviation from 0.5 so neurons preferring "bad"
+            % (AUC < 0.5) are correctly identified — not just max(AUC).
+            [~, peakIdx] = max(abs(auc_sm_sel - 0.5));
+            peakTime_AUC(i) = Time_FracOn_Sel(peakIdx);
+
+            win = 50; % ms
+            sel_win = PSTH_Time_FraOn_All >= peakTime_AUC(i)-win & PSTH_Time_FraOn_All <= peakTime_AUC(i)+win;
+            peakAUC_avg(i) = mean(AUC_tgttime_value_loc(i, sel_win), 'omitnan');
+
+
+            % Calculate the p value of auc by permutation
+            NROC =100;
+            NpermutePeak = 2000;
+
+            TrialIndexValue = GoodObjectIndex(sel);
+
+
+
+            p_peakAUC(i) = permutationROCpeak(TrialIndexValue,currFracOn_Loc,PSTH_Time_FraOn_All,peakTime_AUC(i),peakAUC_avg(i), win, NROC, NpermutePeak);
+        %}
+           % Latency of ROC (first of 3 consecutive significant bins in the same
+           % direction as the peak — handles both good-preferring (AUC>0.5) and
+           % bad-preferring (AUC<0.5) neurons)
+            NContinuous = 3;
+            alphaROC = 0.05;
+            sigMask = p_tgttime_value_loc(i,:) < alphaROC;
+            if TgtAUC(i) > 0.5
+                dirMask = AUC_tgttime_value_loc(i,:) > 0.5; % good-preferring neuron
+            else
+                dirMask = AUC_tgttime_value_loc(i,:) < 0.5; % bad-preferring neuron
+            end
+            LatencyTimeAUC(i) = NaN;
+
+            for idxL = 1:(length(PSTH_Time_FraOn_All)-NContinuous+1)
+                segSig = sigMask(idxL:idxL+NContinuous-1);
+                segDir = dirMask(idxL:idxL+NContinuous-1);
+                if all(segSig) && all(segDir)
+                    LatencyTimeAUC(i) = PSTH_Time_FraOn_All(idxL);
+                    break;
+                end
+            end
+
+            
+            sigMask_ranksum = pAUC_tgttime_value_loc_ranksum(i,:) < alphaROC;
+            
+            LatencyTimeAUC_ranksum(i) = NaN;
+
+            for idxL = 1:(length(PSTH_Time_FraOn_All)-NContinuous+1)
+                segSig = sigMask_ranksum(idxL:idxL+NContinuous-1);
+                segDir = dirMask(idxL:idxL+NContinuous-1);
+                if all(segSig) && all(segDir)
+                    LatencyTimeAUC_ranksum(i) = PSTH_Time_FraOn_All(idxL);
+                    break;
+                end
+            end
+
+
+
+
+
+        
+             
+    %{  
 
         %for saccade onset
         for m = 1:length(TimeSequence_SacOn_mean)
@@ -823,7 +998,7 @@ for i = 1:length(UniqueAngle )
 
         end
 
-
+    %}
 
 
         %}
@@ -857,7 +1032,6 @@ end
 %}
 
 %Transfer to real RF
-%
 if length(UniqueAngle) >=2
 if   Vis_Dff(1) > Vis_Dff(2)% (TgtGood(1)+TgtBad(1)) > (TgtGood(2)+TgtBad(2)) 
     RF = UniqueAngle==UniqueAngle(1);
@@ -868,6 +1042,7 @@ else
     RF = UniqueAngle==UniqueAngle(1);
 end
 %}
+%{
 p_response_interval_RF=p_response_interval(find(RF==1),:);
 p_response_interval_nonRF=p_response_interval(find(RF==0,1,'first'),:);
 
@@ -876,7 +1051,7 @@ TgtAUC_interval_nonRF=TgtAUC_interval(find(RF==0),:);
 
 p_interval_RF = p_interval(find(RF==1));
 p_interval_nonRF = p_interval(find(RF==0));
-
+%}
 p_Vis_RF = p_Vis(find(RF==1));
 VisDiff_RF = Vis_Dff(find(RF==1));
 
@@ -885,7 +1060,7 @@ p_pureSac_RF =p_pureSac(find(RF==1));
 pureSacDiff_RF =pureSac_Diff(find(RF==1));
 
 %Time for export
-ExportTime = [-400,400];
+ExportTime = [-600,400];
 SelectTime = PSTH_Time_FraOn_All>ExportTime(1) & PSTH_Time_FraOn_All<ExportTime(2);
 Time_TgtOn = PSTH_Time_FraOn_All(SelectTime);
 
@@ -925,21 +1100,33 @@ AUCPSTH_TgtOn_Value_RF = AUC_tgttime_value_loc(RF==1,SelectTime);
 AUCPSTH_SacOn_Value_RF = AUC_sactime_value_loc(RF==1,SelectTimeSac);
 
 
-TgtGood_RF = TgtGood(find(RF==1));
-TgtBad_RF = TgtBad(find(RF==1));
+%TgtGood_RF = TgtGood(find(RF==1));
+%TgtBad_RF = TgtBad(find(RF==1));
 
 
 
-SacGood_RF = SacGood(find(RF==1));
-SacBad_RF = SacBad(find(RF==1));
+%SacGood_RF = SacGood(find(RF==1));
+%SacBad_RF = SacBad(find(RF==1));
 
 
 
-p_Tgt_RF  = p_Tgt(find(RF==1));
-p_Sac_RF  = p_Sac(find(RF==1));
+%p_Tgt_RF  = p_Tgt(find(RF==1));
+%p_Sac_RF  = p_Sac(find(RF==1));
 
-TgtAUC_RF = TgtAUC(find(RF==1),1);
-p_AUC_Tgt_RF = p_AUC_Tgt(find(RF==1),1);
+TgtAUC_RF = TgtAUC(find(RF==1));
+p_AUC_Tgt_RF = p_AUC_Tgt(find(RF==1));
+p_AUC_Tgt_RF_ranksum = p_AUC_Tgt_ranksum(find(RF==1));
+ 
+%Add the newly computed peakAUC — commented out
+% do the same thing for %[peakTime_AUC(i),peakAUC_avg(i),p_peakAUC(i),LatencyTimeAUC(i)]
+%peakTime_AUC_RF = peakTime_AUC(RF ==1);
+%peakAUC_avg_RF = peakAUC_avg(RF==1);
+%p_peakAUC_RF = p_peakAUC(RF==1);
+LatencyTimeAUC_RF = LatencyTimeAUC(RF==1);
+LatencyTimeAUCranksum_RF = LatencyTimeAUC_ranksum(RF==1);
+
+
+ 
 
 
 if length(UniqueAngle) == 1
@@ -949,22 +1136,30 @@ if length(UniqueAngle) == 1
     PSTH_SacOn_Good_nonRF = NaN * Good_SacOn_Loc_Mean{1}(SelectTimeSac);
     PSTH_SacOn_Bad_nonRF = NaN * Bad_SacOn_Loc_Mean{1}(SelectTimeSac);
 
-    TgtGood_nonRF = NaN;
-    TgtBad_nonRF = NaN;
-    SacGood_nonRF = NaN;
-    SacBad_nonRF = NaN;
+   % TgtGood_nonRF = NaN;
+   % TgtBad_nonRF = NaN;
+    %SacGood_nonRF = NaN;
+    %SacBad_nonRF = NaN;
 
-    p_Tgt_nonRF  =NaN;
-    p_Sac_nonRF  = NaN;
+    %p_Tgt_nonRF  =NaN;
+    %p_Sac_nonRF  = NaN;
 
     TgtAUC_nonRF = NaN;
     p_AUC_Tgt_nonRF = NaN;
+    p_AUC_Tgt_nonRF_ranksum = NaN;
+    LatencyTimeAUCranksum_nonRF = NaN;
+    
 
     p_Vis_nonRF = NaN;
     VisDiff_nonRF = NaN;
 
     p_pureSac_nonRF =NaN;
     pureSacDiff_nonRF =NaN;
+
+    %peakTime_AUC_nonRF = NaN;
+    %peakAUC_avg_nonRF = NaN;
+    %p_peakAUC_nonRF = NaN;
+    LatencyTimeAUC_nonRF = NaN;
 
     hPSTH_TgtOn_Value_nonRF = PSTH_TgtOn_Good_nonRF;
 
@@ -978,9 +1173,7 @@ if length(UniqueAngle) == 1
 
     AUCPSTH_TgtOn_Value_nonRF = PSTH_TgtOn_Good_nonRF;
     AUCPSTH_SacOn_Value_nonRF = PSTH_SacOn_Good_nonRF;
-    
-
-
+    % peakTime/AUC stats commented out
 
 else
     PSTH_TgtOn_Good_nonRF = Good_FracOn_Loc_Mean{find(RF==0,1,'first'),1}(SelectTime);
@@ -989,22 +1182,29 @@ else
     PSTH_SacOn_Good_nonRF = Good_SacOn_Loc_Mean{find(RF==0,1,'first'),1}(SelectTimeSac);
     PSTH_SacOn_Bad_nonRF = Bad_SacOn_Loc_Mean{find(RF==0,1,'first'),1}(SelectTimeSac);
 
-    TgtGood_nonRF = TgtGood(find(RF==0,1,'first'));
-    TgtBad_nonRF = TgtBad(find(RF==0,1,'first'));
-    SacGood_nonRF = SacGood(find(RF==0,1,'first'));
-    SacBad_nonRF = SacBad(find(RF==0,1,'first'));
+    %TgtGood_nonRF = TgtGood(find(RF==0,1,'first'));
+    %TgtBad_nonRF = TgtBad(find(RF==0,1,'first'));
+    %SacGood_nonRF = SacGood(find(RF==0,1,'first'));
+    %SacBad_nonRF = SacBad(find(RF==0,1,'first'));
 
-    p_Tgt_nonRF  = p_Tgt(find(RF==0,1,'first'));
-    p_Sac_nonRF  = p_Sac(find(RF==0,1,'first'));
+    %p_Tgt_nonRF  = p_Tgt(find(RF==0,1,'first'));
+    %p_Sac_nonRF  = p_Sac(find(RF==0,1,'first'));
 
-    TgtAUC_nonRF = TgtAUC(find(RF==0,1,'first'),1);
-    p_AUC_Tgt_nonRF = p_AUC_Tgt(find(RF==0,1,'first'),1);
+    TgtAUC_nonRF = TgtAUC(find(RF==0,1,'first'));
+    p_AUC_Tgt_nonRF = p_AUC_Tgt(find(RF==0,1,'first'));
+    p_AUC_Tgt_nonRF_ranksum = p_AUC_Tgt_ranksum(find(RF==0,1,'first'));
 
     p_Vis_nonRF = p_Vis(find(RF==0,1,'first'));
     VisDiff_nonRF = Vis_Dff(find(RF==0,1,'first'));
 
     p_pureSac_nonRF =p_pureSac(find(RF==0,1,'first'));
     pureSacDiff_nonRF =pureSac_Diff(find(RF==0,1,'first'));
+
+    %peakTime_AUC_nonRF = peakTime_AUC(find(RF==0,1,'first'));
+    %peakAUC_avg_nonRF = peakAUC_avg(find(RF==0,1,'first'));
+    %p_peakAUC_nonRF = p_peakAUC(find(RF==0,1,'first'));
+    LatencyTimeAUC_nonRF = LatencyTimeAUC(find(RF==0,1,'first'));
+    LatencyTimeAUCranksum_nonRF  = LatencyTimeAUC_ranksum(find(RF==0,1,'first'));
 
 
     hPSTH_TgtOn_Value_nonRF = h_tgttime_value_loc(find(RF==0,1,'first'),SelectTime);
@@ -1019,8 +1219,6 @@ else
 
     AUCPSTH_TgtOn_Value_nonRF = AUC_tgttime_value_loc(find(RF==0,1,'first'),SelectTime);
     AUCPSTH_SacOn_Value_nonRF = AUC_sactime_value_loc(find(RF==0,1,'first'),SelectTimeSac);
-
-    
 
 end
 
@@ -1043,7 +1241,7 @@ PSTH_SacOn_Bad_nonRF_z = (PSTH_SacOn_Bad_nonRF- FR_Mean)/FR_Std;
 
 
 
-
+%{
 
 
 if p_Tgt_RF < 0.05
@@ -1134,8 +1332,8 @@ else
 
 end
 
-
-
+%}
+%{
 
 PSTH_TgtOn_Prefer_RF_z = (PSTH_TgtOn_Prefer_RF - FR_Mean)/FR_Std;
 
@@ -1150,7 +1348,7 @@ PSTH_TgtOn_nonPrefer_nonRF_z = (PSTH_TgtOn_nonPrefer_nonRF - FR_Mean)/FR_Std;
 PSTH_SacOn_Prefer_nonRF_z = (PSTH_SacOn_Prefer_nonRF - FR_Mean)/FR_Std;
 PSTH_SacOn_nonPrefer_nonRF_z = (PSTH_SacOn_nonPrefer_nonRF- FR_Mean)/FR_Std;
 
-
+%}
 
 
 
@@ -1158,6 +1356,7 @@ PSTH_SacOn_nonPrefer_nonRF_z = (PSTH_SacOn_nonPrefer_nonRF- FR_Mean)/FR_Std;
 
 %%
 if ShowFigureFlag
+   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Figure 1: Average firing rate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%for each location
 if length(UniqueAngle)>2
@@ -1352,8 +1551,10 @@ Barlength = 1;
         shadedErrorBar(PSTH_Time_FraOn_All,Bad_FracOn_Loc_Mean{i,1},Bad_FracOn_Loc_Sem{i,1},'lineprops',{[0    0    1]},'transparent',1,'patchSaturation',0.3);
 
          hold on
+         %ylim([0,100]);
          yrange2 = ylim;
         plot([0,0],yrange2,'--k','LineWidth',3);
+        
         
 
        % xlim([-PlotSacPreBuffer, PlotSacPostBuffer]);%Keep in the same scale
@@ -1404,7 +1605,7 @@ Barlength = 1;
       
     end
 
-     info = sprintf('%s_C%d_p(RFVis):%1.3f;p(NonRFVis):%1.3f;p_pureSac(RF):%1.3f;p_pureSac(NonRF):%1.3f;p_Value(RF):%1.3f;p_Value(NonRF):%1.3f',FileName_raw,SpikeChannel,p_Vis_RF,p_Vis_nonRF,p_pureSac_RF,p_pureSac_nonRF,p_Tgt_RF,p_Tgt_nonRF);
+     info = sprintf('%s_C%d_p(RFVis):%1.3f;p(NonRFVis):%1.3f;p_pureSac(RF):%1.3f;p_pureSac(NonRF):%1.3f;',FileName_raw,SpikeChannel,p_Vis_RF,p_Vis_nonRF,p_pureSac_RF,p_pureSac_nonRF);
 
       %  showingtitle=sprintf('%s_%s_N%s_C%s',MonkeyName,string(RecordDateOriginal),string(NeuronNum),string(ChannelNum));
       annotation('textbox', [0.1 0.9 0.8 0.1], 'String', info, 'EdgeColor', 'none', ...
@@ -1412,7 +1613,13 @@ Barlength = 1;
 
 
 end
-
+%{
+% Export fig{1} as vectorized EPS to Desktop
+DesktopPath = fullfile(getenv('HOME'), 'Desktop');
+EpsFileName = fullfile(DesktopPath, ['RasterPSTH_obj_exampleFEF_loconly.eps']);
+print(fig{1}, EpsFileName, '-depsc', '-painters');
+disp(['Exported EPS to: ' EpsFileName]);
+%}
 %{
 %%%%%%%%%Align on Fractal Onset%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subplot(2,4,1); 
@@ -1770,7 +1977,8 @@ elseif  TaskCode==FLEXIBLE_VALUE_TASK
 end
 if exist(OutputFileName)
 
-    load(OutputFileName);
+    tmp = load(OutputFileName);
+    OutputData = tmp.OutputData;
     %Load OutputData into the memory
     if isfield(OutputData,ProtocolMarker)
     ExistFlag=1;
@@ -1787,29 +1995,42 @@ elseif  TaskCode==FLEXIBLE_VALUE_TASK
 end
 
 %%%%%%%%%Save overall scene response characteristics%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %Organize the data
+
+% Per-trial decoder variables (all conditions, raw firing rate, no z-score)
+sel_RF_trials = ismember(TargetAngle, UniqueAngle(RF==1)); % logical: which trials are at RF
+psth_targeton_raw = PSTH_TgtOn_SpikeCount(:, SelectTime);  % all trials x T, raw FR
+target_index      = double(GoodObjectIndex);                % 1=high value, 0=low value, all trials
+RF_index          = double(sel_RF_trials);                  % 1=into RF, 0=out of RF, all trials
+n_high_RF         = sum( GoodObjectIndex &  sel_RF_trials);
+n_low_RF          = sum(~GoodObjectIndex &  sel_RF_trials);
+n_high_nonRF      = sum( GoodObjectIndex & ~sel_RF_trials);
+n_low_nonRF       = sum(~GoodObjectIndex & ~sel_RF_trials);
+
+
 NameStr={'PSTH_TgtOn_Good_RF','PSTH_TgtOn_Bad_RF','PSTH_TgtOn_Good_nonRF','PSTH_TgtOn_Bad_nonRF',...
     'PSTH_TgtOn_Good_RF_z','PSTH_TgtOn_Bad_RF_z',...
     'PSTH_TgtOn_Good_nonRF_z','PSTH_TgtOn_Bad_nonRF_z',...
-    'TgtGood_RF','TgtBad_RF','TgtGood_nonRF','TgtBad_nonRF',...
     'PSTH_SacOn_Good_RF','PSTH_SacOn_Bad_RF','PSTH_SacOn_Good_nonRF','PSTH_SacOn_Bad_nonRF',...
     'PSTH_SacOn_Good_RF_z','PSTH_SacOn_Bad_RF_z',...
     'PSTH_SacOn_Good_nonRF_z','PSTH_SacOn_Bad_nonRF_z',...
-    'SacGood_RF','SacBad_RF','SacGood_nonRF','SacBad_nonRF',...    
-    'PSTH_TgtOn_Prefer_RF','PSTH_TgtOn_nonPrefer_RF','PSTH_SacOn_Prefer_RF','PSTH_SacOn_nonPrefer_RF',...
-    'PSTH_TgtOn_Prefer_nonRF','PSTH_TgtOn_nonPrefer_nonRF','PSTH_SacOn_Prefer_nonRF','PSTH_SacOn_nonPrefer_nonRF',...
-    'Time_TgtOn','Time_SacOn','p_Tgt_RF','p_Sac_RF','p_Tgt_nonRF','p_Sac_nonRF'...
-    'PSTH_TgtOn_Prefer_RF_z','PSTH_TgtOn_nonPrefer_RF_z','PSTH_SacOn_Prefer_RF_z','PSTH_SacOn_nonPrefer_RF_z',...
-    'PSTH_TgtOn_Prefer_nonRF_z','PSTH_TgtOn_nonPrefer_nonRF_z','PSTH_SacOn_Prefer_nonRF_z','PSTH_SacOn_nonPrefer_nonRF_z',...
-    'TgtAUC_RF','TgtAUC_nonRF','p_AUC_Tgt_RF','p_AUC_Tgt_nonRF ',...
-    'p_response_interval_RF','p_response_interval_nonRF','TgtAUC_interval_RF','TgtAUC_interval_nonRF','p_interval_RF','p_interval_nonRF',...
+    'Time_TgtOn','Time_SacOn',...
     'p_Vis_RF','VisDiff_RF','p_Vis_nonRF','VisDiff_nonRF','p_pureSac_RF','p_pureSac_nonRF','pureSacDiff_RF','pureSacDiff_nonRF',...
     'hPSTH_TgtOn_Value_RF','hPSTH_TgtOn_Good_RF','hPSTH_TgtOn_Bad_RF','hPSTH_SacOn_Value_RF','hPSTH_SacOn_Good_RF','hPSTH_SacOn_Bad_RF',...
     'hPSTH_TgtOn_Value_nonRF','hPSTH_TgtOn_Good_nonRF','hPSTH_TgtOn_Bad_nonRF','hPSTH_SacOn_Value_nonRF','hPSTH_SacOn_Good_nonRF','hPSTH_SacOn_Bad_nonRF',...
     'AUCPSTH_TgtOn_Value_RF','AUCPSTH_SacOn_Value_RF','AUCPSTH_TgtOn_Value_nonRF','AUCPSTH_SacOn_Value_nonRF',...
-    'UniqueAngle'
+    'UniqueAngle',...
+    'LatencyTimeAUC_RF','LatencyTimeAUC_nonRF',...
+    'psth_targeton_raw','target_index','RF_index',...
+    'n_high_RF','n_low_RF','n_high_nonRF','n_low_nonRF',...
+     'TgtAUC_RF','p_AUC_Tgt_RF','TgtAUC_nonRF','p_AUC_Tgt_nonRF',...
+     'p_AUC_Tgt_RF_ranksum','p_AUC_Tgt_nonRF_ranksum','LatencyTimeAUCranksum_RF','LatencyTimeAUCranksum_nonRF'
 
-  
+
+
+
 
 };
 
@@ -1819,25 +2040,22 @@ NameStr={'PSTH_TgtOn_Good_RF','PSTH_TgtOn_Bad_RF','PSTH_TgtOn_Good_nonRF','PSTH_
 DataLib={PSTH_TgtOn_Good_RF,PSTH_TgtOn_Bad_RF,PSTH_TgtOn_Good_nonRF,PSTH_TgtOn_Bad_nonRF,...
     PSTH_TgtOn_Good_RF_z,PSTH_TgtOn_Bad_RF_z,...
     PSTH_TgtOn_Good_nonRF_z,PSTH_TgtOn_Bad_nonRF_z,...
-    TgtGood_RF,TgtBad_RF,TgtGood_nonRF,TgtBad_nonRF...
     PSTH_SacOn_Good_RF,PSTH_SacOn_Bad_RF,PSTH_SacOn_Good_nonRF,PSTH_SacOn_Bad_nonRF,...
     PSTH_SacOn_Good_RF_z,PSTH_SacOn_Bad_RF_z,...
     PSTH_SacOn_Good_nonRF_z,PSTH_SacOn_Bad_nonRF_z,...
-    SacGood_RF,SacBad_RF,SacGood_nonRF,SacBad_nonRF...
-    PSTH_TgtOn_Prefer_RF,PSTH_TgtOn_nonPrefer_RF,PSTH_SacOn_Prefer_RF,PSTH_SacOn_nonPrefer_RF,...
-    PSTH_TgtOn_Prefer_nonRF,PSTH_TgtOn_nonPrefer_nonRF,PSTH_SacOn_Prefer_nonRF,PSTH_SacOn_nonPrefer_nonRF,...
-    Time_TgtOn,Time_SacOn,p_Tgt_RF,p_Sac_RF,p_Tgt_nonRF,p_Sac_nonRF...
-    PSTH_TgtOn_Prefer_RF_z,PSTH_TgtOn_nonPrefer_RF_z,PSTH_SacOn_Prefer_RF_z,PSTH_SacOn_nonPrefer_RF_z,...
-    PSTH_TgtOn_Prefer_nonRF_z,PSTH_TgtOn_nonPrefer_nonRF_z,PSTH_SacOn_Prefer_nonRF_z,PSTH_SacOn_nonPrefer_nonRF_z,...
-    TgtAUC_RF,TgtAUC_nonRF,p_AUC_Tgt_RF,p_AUC_Tgt_nonRF,...
-    p_response_interval_RF,p_response_interval_nonRF,TgtAUC_interval_RF,TgtAUC_interval_nonRF,p_interval_RF,p_interval_nonRF,...
+    Time_TgtOn,Time_SacOn,...
     p_Vis_RF,VisDiff_RF,p_Vis_nonRF,VisDiff_nonRF,p_pureSac_RF,p_pureSac_nonRF,pureSacDiff_RF,pureSacDiff_nonRF,...
     hPSTH_TgtOn_Value_RF,hPSTH_TgtOn_Good_RF,hPSTH_TgtOn_Bad_RF,hPSTH_SacOn_Value_RF,hPSTH_SacOn_Good_RF,hPSTH_SacOn_Bad_RF,...
     hPSTH_TgtOn_Value_nonRF,hPSTH_TgtOn_Good_nonRF,hPSTH_TgtOn_Bad_nonRF,hPSTH_SacOn_Value_nonRF,hPSTH_SacOn_Good_nonRF,hPSTH_SacOn_Bad_nonRF,...
     AUCPSTH_TgtOn_Value_RF,AUCPSTH_SacOn_Value_RF,AUCPSTH_TgtOn_Value_nonRF,AUCPSTH_SacOn_Value_nonRF,...
-    UniqueAngle
+    UniqueAngle,...
+    LatencyTimeAUC_RF,LatencyTimeAUC_nonRF,...
+    psth_targeton_raw,target_index,RF_index,...
+    n_high_RF,n_low_RF,n_high_nonRF,n_low_nonRF,...
+    TgtAUC_RF,p_AUC_Tgt_RF,TgtAUC_nonRF,p_AUC_Tgt_nonRF,...
+    p_AUC_Tgt_RF_ranksum,p_AUC_Tgt_nonRF_ranksum,LatencyTimeAUCranksum_RF,LatencyTimeAUCranksum_nonRF
 
-   
+
 };
  
 

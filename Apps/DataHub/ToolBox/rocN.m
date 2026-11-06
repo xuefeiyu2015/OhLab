@@ -105,10 +105,13 @@ if permuteN > 0
     hitPerm = hitPerm/length(x);
     
     perm.auROCPerm = nan(permuteN,1);
+    tmp_AUC = nan(permuteN,1);
+    %tic
     for n = 1:permuteN
-        perm.auROCPerm(n) = trapz(faPerm(:,n),hitPerm(:,n));
+        tmp_AUC(n) = trapz(faPerm(:,n),hitPerm(:,n));
     end
-    
+   % toc
+    perm.auROCPerm = tmp_AUC;
     perm.pValue = sum(perm.auROCPerm > auROC) / permuteN; % One tail
     if auROC < 0.5, perm.pValue = 1 - perm.pValue; end
     perm.pValue = perm.pValue * 2; % Two tail

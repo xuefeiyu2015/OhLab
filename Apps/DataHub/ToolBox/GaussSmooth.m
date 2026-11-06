@@ -71,7 +71,7 @@ else
     tedge = max(t);
     iedge = find(t > tedge - ss);
     nedge = length(iedge);
-    for i = 1:nedge;
+    for i = 1:nedge
         dist = tedge - t(iedge(i));
         include = find( t < t(iedge(i)) - dist);
         filter = a*exp(-0.5*((t(include) - t(iedge(i))).^2)/(sigma2));

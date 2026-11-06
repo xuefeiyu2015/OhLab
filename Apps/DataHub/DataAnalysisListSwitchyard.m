@@ -37,7 +37,7 @@ ECode;
          AnalysesName={'MemorySaccadeAnalysis','MemorySaccadePopulation','VisualLatencyMeasure','Neuron Basic Analysis','SaccadeAnalysis','ITI_FirstSaccades'};
          
      case OBJ_DIR_SAC_TASK %Object directed saccade task(Stable Value)
-         AnalysesName={'RTChange_Inactivation','DifferentPeriodCompare','ObjSaccadeAnalysis','RTGoodBadAnalysis','ObjectResponsesDifferentLocation','ObjectOnsetLatency','ObjectValueLocationRegression','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
+         AnalysesName={'RTChange_Inactivation','DifferentPeriodCompare','ObjSaccadeAnalysis','RTGoodBadAnalysis','ValueTaskPerformance','ObjectResponsesDifferentLocation','ObjectOnsetLatency','ObjectValueLocationRegression','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
      case FLEXIBLE_VALUE_TASK %Object directed saccade task (Flexible Value)
          AnalysesName={'FlexibleValueResponseAnalysis','ObjSaccadeAnalysis','ObjectResponsesDifferentLocation','ObjectOnsetLatency','ObjSaccadeAnalysis_TrialHistory','SaccadeAnalysis','Eye movement analysis','Performance analysis','Neuron Basic Analysis'};
      case OBJ_MEM_SAC_TASK %Object Memory saccade (Stable Value)
@@ -59,9 +59,9 @@ ECode;
          
          
      case ONEDR_TASK %One direction reward task
-         AnalysesName={'OneDRAnalysis','OneDR_RT'};
+         AnalysesName={'OneDRAnalysis','OneDR_RT','ValueTaskPerformance'};
      case OBJ_LOCATIONVALUE_TASK %Object Location Value Task
-         AnalysesName={'OneDRAnalysis','OneDR_RT'};
+         AnalysesName={'OneDRAnalysis','OneDR_RT','ValueTaskPerformance'};
 
      case VARYANGLESTIM_TASK %Vary angle stimulation task
          AnalysesName={'VaryAngleStimulation'};
@@ -134,7 +134,7 @@ ECode;
          
          
      case BATCH %Batch analysis
-         AnalysesName={'Batch_FreeViewBehavior','Batch_FreeViewBehavior_Grid','Batch_DelaySaccadeStim','Batch_FixStimGapStimCompare','Batch_FixStimFixation','Batch_FreeViewBehavior_VaryDurAmp','Batch_Opto_WaveFormClustering','Batch_StableValue_Behavior','Batch_StableValue_All','Batch_OneDR_Behavior','Batch_StableValue_Opto','Batch_StableOneDR_Opto','Batch_FlexibleValueOpto','Batch_OneDR','Batch_OptoOneDR','Batch_OptogeneticsFreeView','Batch_FEF_SC_VideoFreeView','Batch_FEF_SC_VideoFreeView_ExampleExport','Batch_OptogeneticsFreeView_SC','Batch_Optogenetics_FEF','Batch_Optogenetics_Control','Batch_Optogenetics_FEF_Depth','Batch_Optogenetics_SNr','Batch_Optogenetics','Batch_Opto_ValueTasks','Batch_SequenceLearning','Batch_VideoFreeView_Neural','Batch_MemorySaccade','Batch_MemorySaccadeLatency','Batch_ObjectLatency','Batch_SaccadeAnalysis','Batch_FourBlockCmp_Exploration','Batch_EventRT_Exploration','NeuronClassification_Foraging','Batch_SceneTuning_Foraging','Batch_FractalTuning_Foraging','Batch_SceneFractalCorrelation_Foraging','Batch_Saccade_Foraging'};
+         AnalysesName={'Batch_FreeViewBehavior','Batch_FreeViewBehavior_Grid','Batch_DelaySaccadeStim','Batch_FixStimGapStimCompare','Batch_FixStimFixation','Batch_FreeViewBehavior_VaryDurAmp','Batch_Opto_WaveFormClustering','Batch_StableValue_Behavior','Batch_StableValue_All','Batch_OneDR_Behavior','Batch_ObjLocValue_Behavior','Batch_ObjLocValue_Organize','Batch_StableValue_Opto','Batch_StableOneDR_Opto','Batch_FlexibleValueOpto','Batch_OneDR','Batch_OptoOneDR','Batch_OptogeneticsFreeView','Batch_FEF_SC_VideoFreeView','Batch_FEF_SC_VideoFreeView_ExampleExport','Batch_OptogeneticsFreeView_SC','Batch_Optogenetics_FEF','Batch_Optogenetics_Control','Batch_Optogenetics_FEF_Depth','Batch_Optogenetics_SNr','Batch_Optogenetics','Batch_Opto_ValueTasks','Batch_SequenceLearning','Batch_VideoFreeView_Neural','Batch_MemorySaccade','Batch_MemorySaccadeLatency','Batch_ObjectLatency','Batch_SaccadeAnalysis','Batch_FourBlockCmp_Exploration','Batch_EventRT_Exploration','NeuronClassification_Foraging','Batch_SceneTuning_Foraging','Batch_FractalTuning_Foraging','Batch_SceneFractalCorrelation_Foraging','Batch_Saccade_Foraging'};
          
      otherwise
          AnalysesName={'UndefinedTASK, Add the task to the ecode first!'};
