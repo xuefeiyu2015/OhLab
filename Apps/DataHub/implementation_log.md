@@ -1,5 +1,73 @@
 # Implementation Log
 
+## [2026-11-06] — AreaComparison: FEF vs SC timing (which area's value signal rises first)
+**Files changed:** `Batch_ObjLocValue_AreaComparison.m` (timing is now the main analysis; overlap kept behind `Params.RunOverlap`), `ObjLocSingleNeuron/` (new: ComputeValueLatency, ComputePopulationOnset, ComputeAreaLatencyData, ComputeLatencyAreaComparison, PlotLatencySlide).
+**What:**
+- Single-neuron onset: rates use a causal 30 ms boxcar, so no backward leak. The onset is the first bin starting ≥5 consecutive 10 ms bins with high-vs-low Mann-Whitney p < .05 and the same sign as the 100–200 ms AUC.
+- Population onset: half-max of the sign-aligned AUC−0.5, with a 2000× bootstrap over neurons.
+- Variants: main = each trial's response minus its own −300 to 0 ms baseline, on all value-coding neurons; control = raw responses, only neurons without anticipation.
+- Reference: visual-response onset of the same neurons (signrank of rate minus baseline), and the per-neuron value−visual lag.
+- FEF vs SC tests: bootstrap onset difference and ranksum, with Holm correction within each signal family.
+- Outputs: `Timing_*_<Subgroup>.png/.fig` and `Timing_<Subgroup>.csv` in `Results/ObjectLocationPSTH/AreaComparison/`.
+
+**Result (All):**
+- Visual onset: SC leads by about 27 ms in both tasks (population 50 vs 76 ms; single-neuron medians 45 vs 85–105 ms; p < .002).
+- Value onset (corrected): SC is earlier at the population level, object −13 ms (Holm .34) and location −43 ms (Holm .20, wide SC CI 42–91 ms). Single-neuron medians are equal. Not significant.
+- Value−visual lag: SC is longer (object +15 ms, Holm .038). The SC visual lead is not carried over into an earlier value signal.
+
+**Why:** The user's FEF vs SC comparison focuses on timing.
+
+---
+
+## [2026-11-06] — Batch_ObjLocValue_AreaComparison: FEF vs SC comparison from the DataHub GUI
+**Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_AreaComparison.m` (new), `ObjLocSingleNeuron/ComputeBatchRowArea.m` (new), `ObjLocSingleNeuron/PlotSlideScatterVenn.m` (Venn circle without duplicate vertex: removes the polyshape warning), both switchyards.
+**What:** A GUI batch protocol. Load `FEFSC_BothRA_StableValue.txt` and each row is assigned to FEF or SC by session plus channel range. The match uses both because simultaneous sessions (Adams042624/060624FRACSAC1) are listed in both areas with different channels. If only one area is loaded, the other area's batch file is loaded automatically. For All / Fast / Others it computes overlap vs chance (all neurons, with and without anticipation, baseline-corrected), coding fractions, and FEF vs SC tests (Fisher, log-OR z, Holm). Figures are made for `PlotSubgroups` (default All): scatter+Venn per area, overlap vs chance, anticipation split, baseline-corrected, area proportions, area overlap OR. Outputs go to `Results/ObjectLocationPSTH/AreaComparison/`. Results for All match ObjLocValue_SlideDeck exactly (FEF 302, SC 215).
+**Why:** The per-area batch scripts take one batch file each, so the GUI had no way to compare FEF and SC.
+
+---
+
+## [2026-11-05] — ObjLocValue_SlideDeck: talk-ordered figures (scatter+Venn → heatmap → 4-type AUC → overlap vs chance → anticipation split → baseline-corrected → FEF vs SC)
+**Files changed:** `AnalysisProtocol/BatchAnalysis/ObjLocValue_SlideDeck.m` (new), `ObjLocSingleNeuron/` (new: ComputeOverlapVsChance, ComputeSlideDeckData, ComputeSlideDeckComparison, PlotSlideScatterVenn, PlotSlideOverlapVsChance; PlotPresentationEffectDots gains `LegendPos`).
+**What:** Overlap vs chance: E[both] = nObj·nLoc/N with a hypergeometric 95% range, and a Fisher test. The verdict follows the Fisher p. Slides 1–5 use the protocols' saved AUCs; the anticipation split (oneDR pre-target ranksum) and slide 6 use trial-level ROC. FEF vs SC tests are Holm-corrected over 7 tests. Headlines are generated from results. Outputs go to `Results/ObjectLocationPSTH/SlideDeck/`.
+**Why:** Presentation in the user's requested order.
+
+---
+
+## [2026-11-05] — ObjLocValue_SingleUnitSummary: cross-area summary, FEF vs SC tests, slide figures
+**Files changed:** `AnalysisProtocol/BatchAnalysis/ObjLocValue_SingleUnitSummary.m` (new), `ObjLocSingleNeuron/` (new: BuildObjLocBatchData, ComputeSplitHalfReliability, ComputeSingleUnitSummary, ComputeAreaComparison, ComputePresentationData, FormatSingleUnitSummaryText, PresentationStyle, Slide* helpers, PlotPresentationFractionBars, PlotPresentationEffectDots, PlotPresentationAUCScatter).
+**What:** Runs FEF and SC together and collects every single-unit metric: coding fractions, pre-target differences, overlap OR, Spearman rho, concordance, and a split-half noise-corrected r (Spearman-Brown, 100 splits, bootstrap CI over neurons). Formal FEF vs SC tests use Fisher, ranksum, log-OR z, Fisher z and bootstrap, Holm-corrected over 16 tests. Produces 5 slide figures whose headlines are worded from the results. Area colors are CVD-validated (#2a78d6 / #eb6834). Outputs go to `Results/ObjectLocationPSTH/SingleUnitSummary/`.
+**Why:** Gives one reproducible summary of the single-unit observations and the area comparison for the presentation.
+
+---
+
+## [2026-11-05] — Baseline-corrected ROC + split by oneDR baseline difference
+**Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_BaselineCorrectedROC.m` (new), `Batch_ObjLocValue_BaselineSplit.m` (new), `ObjLocSingleNeuron/` (new: MannWhitneyAUC, ComputeTrialWindowAUC, ComputeAUCVariantTable, ComputeOverlapStats, ComputeBaselineCorrectionResults, ComputeBaselineSplitResults, PlotRawVsCorrectedAUC, PlotOverlapStatsComparison, PlotObjLocAUCScatterBySubset; LoadObjLocNeuronTable gains `LoadTrials`), both switchyards.
+**What:** Trial-level ROC from `psth_targeton_raw` (RF trials): raw response [100 200] ms, response minus the same trial's [-300 0] ms baseline, and baseline alone. Uses exact Mann-Whitney AUC + ranksum. Raw AUC vs saved TgtAUC_RF: Spearman rho ≈ 0.97 (saved uses smoothed FR). Script 1 compares object vs location coding raw vs corrected. Script 2 splits neurons by the oneDR baseline difference (p < .05) and compares the object–location relationship in each subset. Time courses use a 50 ms boxcar (`TCSmoothMs`).
+**Why:** The oneDR block design creates a pre-target value offset. These scripts test whether the object–location relationship depends on it.
+
+---
+
+## [2026-11-05] — Trial-count check applied to all AUC analyses; location-sorted heatmap; heatmap range
+**Files changed:** `Batch_ObjLocValue_Organize.m`, `Batch_ObjLocValue_SingleNeuron.m`, `ObjLocSingleNeuron/{LoadObjLocNeuronTable,ComputeObjLocSelection,ComputeObjLocSingleNeuronResults,PlotAUCHeatmapPair}.m`
+**What:** `Sel_All` now requires >= 10 trials in each RF condition (high/low x stable/oneDR), the check that was previously applied only to the saved PopPSTH (`Sel_Raw`). The saved PopPSTH neuron set is unchanged. The new script uses the same rule (`Params.MinTrials`). Neuron sets match Organize exactly: FEF 302/45/204, SC 215/33/139 (All/Fast/Others). Also added a heatmap sorted by location AUC, set the heatmap x-range to [-200 400] ms, and both scripts now add the helper folder to the path themselves (fixes GUI runs).
+**Why:** Keeps the AUC figures and the decoder input on the same neurons, and drops noisy low-trial AUCs.
+
+---
+
+## [2026-11-05] — Batch_ObjLocValue_SingleNeuron: object vs location value at the single-neuron level
+**Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_SingleNeuron.m` (new), `AnalysisProtocol/BatchAnalysis/ObjLocSingleNeuron/*` (new: LoadObjLocNeuronTable, ComputeObjLocSelection, ComputeValueGroups, ComputeSignAlignedAUC, ComputeGroupAUCTimecourse, ComputeSignConcordance, ComputePreTargetAUC, ComputeOtherValueEquivalence, ComputeObjLocSingleNeuronResults, ComputeAUCSortOrder, Plot*), `Batch_ObjLocValue_Organize.m` (heatmap helpers moved out to shared files), `RunBatchObjLoc.m` (BatchFunc / flags / SingleNeuronParams overridable), both switchyards.
+**What:** Groups neurons as ObjOnly/LocOnly/Both/None/Ambiguous/Unclassified using the 100–200 ms ranksum p. The "no coding" rule is an option (`NoCodingCriterion` = pvalue | effect | both). Diagnostics: sign concordance (binomial), pre-target AUC (own-sign aligned), other-value equivalence (sign-aligned mean, bootstrap CI, TOST), sign-aligned group AUC time courses, and AUC heatmaps sorted by object AUC. FEF/SC are run separately, each as All/Fast/Others.
+**Why:** To test whether the "other" value AUC in ObjOnly/LocOnly groups is real sub-threshold coding or a confound.
+
+---
+
+## [2026-11-05] — Fix OneDR NaN fallback + add object-sorted AUC heatmaps
+**Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_Organize.m`
+**What:** (1) Removed NaN assignments in the OneDR `else` branch that overwrote stable-task variables (`p_Vis_RF`, `VisDiff_RF`, `p_pureSac_RF`, `hPSTH_TgtOn_Value_RF`, …); the `_oneDR` fallbacks below are unchanged. (2) Added side-by-side AUC-vs-time heatmaps (object | location) for Sel_All, both sorted by object-task TgtAUC_RF (`HeatmapSortMode` = 'signed' or 'abs'). New local helpers: `ComputeAUCSortOrder` (pure) and `PlotAUCHeatmapPair` (render only).
+**Why:** The bug could corrupt stable-task fields for neurons without OneDR data. The heatmap shows whether location value coding follows object value coding neuron by neuron.
+
+---
+
 ## [2026-11-05] — Gaze-duration histogram range fixed to 350-1500 ms
 
 **Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_Behavior.m`

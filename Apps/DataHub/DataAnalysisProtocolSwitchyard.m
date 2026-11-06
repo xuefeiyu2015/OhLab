@@ -1110,6 +1110,34 @@ elseif strcmp(Protocol,'Batch_ObjLocValue_Organize')
         Batch_ObjLocValue_Organize(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
     end
 
+elseif strcmp(Protocol,'Batch_ObjLocValue_SingleNeuron')
+    if EditIndex
+        edit Batch_ObjLocValue_SingleNeuron.m
+    else
+        Batch_ObjLocValue_SingleNeuron(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
+
+elseif strcmp(Protocol,'Batch_ObjLocValue_BaselineCorrectedROC')
+    if EditIndex
+        edit Batch_ObjLocValue_BaselineCorrectedROC.m
+    else
+        Batch_ObjLocValue_BaselineCorrectedROC(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
+
+elseif strcmp(Protocol,'Batch_ObjLocValue_BaselineSplit')
+    if EditIndex
+        edit Batch_ObjLocValue_BaselineSplit.m
+    else
+        Batch_ObjLocValue_BaselineSplit(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
+
+elseif strcmp(Protocol,'Batch_ObjLocValue_AreaComparison')
+    if EditIndex
+        edit Batch_ObjLocValue_AreaComparison.m
+    else
+        Batch_ObjLocValue_AreaComparison(Data,  StartTrial, EndTrial,ShowFigureFlag,OutputFlag);
+    end
+
 
    
 end

@@ -1,5 +1,8 @@
 function Batch_ObjLocValue_Organize(Data,  StartFile, EndFile,ShowFigureFlag,OutputFlag)
 BatchFileName=Data.BatchFileName;
+% Shared helpers (ComputeAUCSortOrder, PlotAUCHeatmapPair) live in ObjLocSingleNeuron/
+HelperDir = fullfile(fileparts(mfilename('fullpath')), 'ObjLocSingleNeuron');
+if ~contains([pathsep, path, pathsep], [pathsep, HelperDir, pathsep]), addpath(HelperDir); end
 %Batch data file path
 FilesName=Data.ResultFilePath(StartFile: EndFile);
 RecordDate=Data.RecordDate(StartFile: EndFile);
@@ -432,19 +435,10 @@ else
 
 
 
-        p_Vis_RF(index) = NaN;
-        VisDiff_RF(index) = NaN;
-        p_Vis_nonRF(index) = NaN;
-        VisDiff_nonRF(index) = NaN;
+        % (Removed: NaN assignments here previously overwrote the
+        %  stable-task variables p_Vis_RF, VisDiff_RF, p_pureSac_RF,
+        %  hPSTH_TgtOn_Value_RF, etc. The _oneDR fallbacks are set below.)
 
-        p_pureSac_RF(index) = NaN;
-        pureSacDiff_RF(index) = NaN;
-        p_pureSac_nonRF(index) = NaN;
-        pureSacDiff_nonRF(index) =NaN;
-
-        hPSTH_TgtOn_Value_RF{index}=NaN;
-
-      
        %peakAUC_OneDR_RF(index) =NaN;
        %p_peakAUC_OneDR_RF(index) = NaN;
 
@@ -676,8 +670,14 @@ ModuType=ModuType';%Transfer to column;
 ResponseValid = (FR_Mean_oneDR>1 & FR_Mean_stable>1)';
 VisualResponsive = p_Vis_RF<0.05 & VisDiff_RF>0;
 
+% Trial count: >= MinTrials in every RF condition (high/low x stable/oneDR).
+% Applied to Sel_All so AUC analyses and saved PopPSTH use the same neurons.
+MinTrials = 10;
+TrialCount_OK = (n_high_RF_stable >= MinTrials & n_low_RF_stable >= MinTrials & ...
+                 n_high_RF_oneDR  >= MinTrials & n_low_RF_oneDR  >= MinTrials)';
+
 Sel = OneDRIndex' == 1;
-Sel_All = Sel & OptoIndex' ==1 & ResponseValid & VisualResponsive';
+Sel_All = Sel & OptoIndex' ==1 & ResponseValid & VisualResponsive' & TrialCount_OK;
 %Sel_All = OptoIndex' ==1;
 Sel_Others = Sel_All & ModuType==4 ;
 Sel_Fast = Sel_All & ModuType==1 ;
@@ -1104,6 +1104,34 @@ for gi = 1:4
 end
 sgtitle(sprintf('%s — Rectified AUC PSTH by significance group (Sel\\_All)', areaLabel_fig));
 
+%% Figure: AUC-vs-time heatmaps, both tasks sorted by object-value AUC
+% Rows = neurons (Sel_All). Raw (signed) AUC, diverging colormap at 0.5.
+% SortMode 'signed': strongest high-value-preferring on top -> strongest
+%                    low-value-preferring at bottom (sign concordance visible)
+% SortMode 'abs'   : by |AUC_obj - 0.5|, strongest on top
+HeatmapSortMode = 'signed';
+HeatmapCLim     = [0.2, 0.8];
+HeatmapWin      = [-200, 400];   % ms, heatmap x-range
+
+sortIdx_obj = ComputeAUCSortOrder(TgtAUC_RF_All, HeatmapSortMode);
+
+FigureStartNum = FigureStartNum + 1;
+FigureIndex    = FigureIndex + 1;
+figtitlestr{FigureIndex} = sprintf('AUC heatmap sorted by object AUC — %s', areaLabel_fig);
+fig{FigureIndex} = PlotAUCHeatmapPair( ...
+    AUCPSTH_TgtOn_Value_RF_stable_All(sortIdx_obj,:), PSTH_Time_TgtOn_stable, ...
+    AUCPSTH_TgtOn_Value_RF_oneDR_All(sortIdx_obj,:),  PSTH_Time_TgtOn_OneDR, ...
+    HeatmapWin, HeatmapCLim, figtitlestr{FigureIndex}, FigureStartNum);
+
+sortIdx_loc = ComputeAUCSortOrder(TgtAUC_RF_OneDRAll, HeatmapSortMode);
+FigureStartNum = FigureStartNum + 1;
+FigureIndex    = FigureIndex + 1;
+figtitlestr{FigureIndex} = sprintf('AUC heatmap sorted by location AUC — %s', areaLabel_fig);
+fig{FigureIndex} = PlotAUCHeatmapPair( ...
+    AUCPSTH_TgtOn_Value_RF_stable_All(sortIdx_loc,:), PSTH_Time_TgtOn_stable, ...
+    AUCPSTH_TgtOn_Value_RF_oneDR_All(sortIdx_loc,:),  PSTH_Time_TgtOn_OneDR, ...
+    HeatmapWin, HeatmapCLim, figtitlestr{FigureIndex}, FigureStartNum, [], 'location AUC');
+
 %% Figure 5 
 %% AUC correlation heatmaps: OneDR vs Stable (per-neuron, all time bins)
 % Two heatmaps side-by-side:
@@ -1395,15 +1423,8 @@ plotAUCScatter(TgtAUC_RF_rect(Sel_All), TgtAUC_oneDR_RF_rect(Sel_All), ...
 
 %keyboard
 %}
-%% Per-trial PSTH selection: sufficient trials in every RF condition (>=15)
-TrialCount_OK = ...
-    n_high_RF_stable >= 10 & ...
-    n_low_RF_stable  >= 10 & ...
-    n_high_RF_oneDR  >= 10 & ...
-    n_low_RF_oneDR   >= 10;
-TrialCount_OK = TrialCount_OK';   % column vector to match Sel_* vectors
-
-Sel_Raw = Sel_All & TrialCount_OK;
+%% Per-trial PSTH selection: trial-count check is already part of Sel_All
+Sel_Raw = Sel_All;
 
 % ModuType for selected neurons
 ModuType_Sel = ModuType(Sel_Raw);

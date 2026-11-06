@@ -16,8 +16,11 @@ addpath(genpath(DataHubPath));
 BatchFileDir = '/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/Results/BatchFile/';
 ResultDir    = '/Users/xuefeiyu/Documents/XuefeiFile/WorkRelated/Program_Matlab_Local/OHLab/DataAnalysis/Results/';
 
-%% Batch files to run
-BatchFiles = {'FEF_BothRA_StableValue.txt', 'SC_BothRA_StableValue.txt'};
+%% Batch files and function to run (pre-set these variables to override)
+if ~exist('BatchFiles', 'var'),     BatchFiles = {'FEF_BothRA_StableValue.txt', 'SC_BothRA_StableValue.txt'}; end
+if ~exist('BatchFunc', 'var'),      BatchFunc = @Batch_ObjLocValue_Organize; end   % or @Batch_ObjLocValue_SingleNeuron
+if ~exist('ShowFigureFlag', 'var'), ShowFigureFlag = 0; end
+if ~exist('OutputFlag', 'var'),     OutputFlag = 1; end
 
 for b = 1:length(BatchFiles)
     BatchFileName = BatchFiles{b};
@@ -71,14 +74,14 @@ for b = 1:length(BatchFiles)
     Data.FileName       = FileNames;
     Data.ChannelNumber  = ChannelNumbers;
     Data.TrialInterval  = TrialIntervals;
+    if exist('SingleNeuronParams', 'var')      % optional overrides for Batch_ObjLocValue_SingleNeuron
+        Data.SingleNeuronParams = SingleNeuronParams;
+    end
 
     %% Run batch (all files, no figures, save output)
     StartFile       = 1;
     EndFile         = length(FileNames);
-    ShowFigureFlag  = 0;
-    OutputFlag      = 1;
-
-    Batch_ObjLocValue_Organize(Data, StartFile, EndFile, ShowFigureFlag, OutputFlag);
+    BatchFunc(Data, StartFile, EndFile, ShowFigureFlag, OutputFlag);
 
     disp(['Completed: ', BatchFileName]);
 end
