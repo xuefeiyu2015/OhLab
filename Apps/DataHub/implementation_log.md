@@ -1,5 +1,13 @@
 # Implementation Log
 
+## [2026-11-05] — Gaze-duration histogram range fixed to 350-1500 ms
+
+**Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_Behavior.m`
+**What:** New local `MetricDisplayRange` ([350 1500] for GazeDur, [] otherwise). In `PlotFeatureHistogram` (fig 205, all four monkey × task panels) it sets the bin edges (350:25:1500) and the x-limits. Other figures keep automatic ranges.
+**Why:** User request; consistent range across the four histogram panels.
+
+---
+
 ## [2026-11-05] — Fig 208 back to error rate (selectable)
 
 **Files changed:** `AnalysisProtocol/BatchAnalysis/Batch_ObjLocValue_Behavior.m`

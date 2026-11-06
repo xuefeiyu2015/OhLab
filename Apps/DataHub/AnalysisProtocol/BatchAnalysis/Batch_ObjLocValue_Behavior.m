@@ -379,6 +379,8 @@ for k = 1:nMk
             All  = [G; B];
             if isempty(All), All = 0; end
             Edges = floor(min(All)/BinW)*BinW : BinW : ceil(max(All)/BinW)*BinW + BinW;
+            Rg = MetricDisplayRange(Metric);
+            if ~isempty(Rg), Edges = Rg(1):BinW:Rg(2); end
         end
         ax = subplot(nMk, nT, (k-1)*nT + t); hold(ax, 'on');
         histogram(ax, G, Edges, 'Normalization', 'probability', 'FaceColor', ColorGood, ...
@@ -398,6 +400,8 @@ for k = 1:nMk
         title(ax, {sprintf('%s - %s', Stats.Monkeys{k}, Stats.TaskLabels{t}), ...
             sprintf('mean High %.0f / Low %.0f %s, p=%.2g', mean(G), mean(B), Unit{1}, P)});
         xlabel(ax, Label); ylabel(ax, 'Fraction of trials');
+        Rg = MetricDisplayRange(Metric);
+        if ~isempty(Rg), xlim(ax, Rg); end
         legend(ax, {sprintf('High (n=%d)', numel(G)), sprintf('Low (n=%d)', numel(B))}, ...
             'Box', 'off', 'Location', 'northwest');
         set(ax, 'TickDir', 'out'); box(ax, 'off');
@@ -599,3 +603,13 @@ else
 end
 end
 
+function Rg = MetricDisplayRange(Metric)
+% Fixed x-axis / bin range of a metric in the histogram figures
+% ([] = automatic). Gaze duration: 350-1500 ms.
+switch Metric
+    case 'GazeDur'
+        Rg = [350 1500];
+    otherwise
+        Rg = [];
+end
+end
